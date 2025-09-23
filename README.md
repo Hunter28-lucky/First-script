@@ -15,7 +15,7 @@ A professional birthday celebration system with live image capture and admin pan
 - **Frontend**: HTML5, CSS3, JavaScript (WebRTC, Canvas API)
 - **Backend**: Node.js, Express.js
 - **Real-time**: WebSocket communication
-- **Deployment**: Vercel-ready
+- **Deployment**: Render-ready
 
 ## Quick Start
 
@@ -87,14 +87,26 @@ birthday-wish-system/
 
 ## Deployment Notes
 
-- All files are optimized for Vercel deployment
+- All files are optimized for Render deployment
 - WebSocket support included
 - No additional configuration needed
 - Works with custom domains
 
+## Deployment on Render
+
+1. **Push to GitHub** - Ensure your code is in a GitHub repository
+2. **Connect to Render** - Go to [dashboard.render.com](https://dashboard.render.com)
+3. **Create Web Service** - Connect your GitHub repo
+4. **Configure Settings**:
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+   - **Environment**: Node
+5. **Deploy** - Render will automatically deploy your app
+6. **Access** - Use the provided Render URL
+
 ## Usage
 
-1. Deploy to Vercel
+1. Deploy to Render
 2. Open `/admin.html` 
 3. Generate birthday celebration links
 4. Share links with birthday celebrants

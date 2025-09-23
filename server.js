@@ -10,6 +10,11 @@ const wss = new WebSocket.Server({ server });
 // serve static files from project folder
 app.use(express.static(path.join(__dirname)));
 
+// Health check endpoint for Render
+app.get('/', (req, res) => {
+  res.send('Birthday Wish System is running!');
+});
+
 // Handle short birthday links
 app.get('/wish/:sessionId', (req, res) => {
   const sessionId = req.params.sessionId;
@@ -146,10 +151,7 @@ wss.on('connection', (ws, req) => {
 });
 
 const PORT = process.env.PORT || 8000;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`WebImageAnalyzer server listening on port ${PORT}`);
   console.log(`Admin panel: http://localhost:${PORT}/admin.html`);
 });
-
-// Export for Vercel serverless deployment
-module.exports = app;

@@ -28,6 +28,11 @@ app.get('/wish/:sessionId', (req, res) => {
   res.redirect(redirectUrl);
 });
 
+// Root route - serve index.html
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 // Session and client management
 const adminClients = new Set();
 const userClients = new Map(); // sessionId -> Set of user WebSockets

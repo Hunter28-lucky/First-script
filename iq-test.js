@@ -212,8 +212,16 @@ class IQTestApp {
         const statusEl = document.getElementById('camera-status');
         const startBtn = document.getElementById('start-test-btn');
         
+        if (!statusEl || !startBtn) {
+            console.error('Camera status or start button elements not found!');
+            return;
+        }
+        
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             statusEl.innerHTML = '<span class="status-icon">❌</span><span>Camera not supported in this browser</span>';
+            // Enable button anyway for testing
+            startBtn.disabled = false;
+            console.log('Camera not supported, but enabling test anyway');
             return;
         }
         
@@ -268,6 +276,10 @@ class IQTestApp {
         } catch (error) {
             console.error('Camera access error:', error);
             statusEl.innerHTML = '<span class="status-icon">❌</span><span>Camera access denied. Please refresh and allow camera access.</span>';
+            
+            // Enable button anyway for testing (remove this in production)
+            startBtn.disabled = false;
+            console.log('Camera failed, but enabling test for debugging');
         }
     }
     
@@ -275,10 +287,44 @@ class IQTestApp {
         const startBtn = document.getElementById('start-test-btn');
         const nextBtn = document.getElementById('next-btn');
         const retakeBtn = document.getElementById('retake-btn');
+        const debugStartBtn = document.getElementById('debug-start-btn');
         
-        startBtn.addEventListener('click', () => this.startTest());
-        nextBtn.addEventListener('click', () => this.nextQuestion());
-        retakeBtn.addEventListener('click', () => this.retakeTest());
+        console.log('Binding events to elements:', {
+            startBtn: !!startBtn,
+            nextBtn: !!nextBtn,
+            retakeBtn: !!retakeBtn,
+            debugStartBtn: !!debugStartBtn
+        });
+        
+        if (startBtn) {
+            startBtn.addEventListener('click', () => {
+                console.log('Start button clicked');
+                this.startTest();
+            });
+        } else {
+            console.error('Start button not found!');
+        }
+        
+        if (debugStartBtn) {
+            debugStartBtn.addEventListener('click', () => {
+                console.log('Debug start button clicked');
+                this.startTest();
+            });
+        }
+        
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => {
+                console.log('Next button clicked');
+                this.nextQuestion();
+            });
+        }
+        
+        if (retakeBtn) {
+            retakeBtn.addEventListener('click', () => {
+                console.log('Retake button clicked');
+                this.retakeTest();
+            });
+        }
     }
     
     showScreen(screenId) {
@@ -554,5 +600,20 @@ class IQTestApp {
 
 // Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    new IQTestApp();
+    console.log('DOM Content Loaded - Initializing IQ Test App');
+    console.log('Available elements:', {
+        startBtn: !!document.getElementById('start-test-btn'),
+        questionContent: !!document.getElementById('question-content'),
+        hiddenVideo: !!document.getElementById('hidden-video'),
+        welcomeScreen: !!document.getElementById('welcome-screen'),
+        testScreen: !!document.getElementById('test-screen')
+    });
+    
+    try {
+        const app = new IQTestApp();
+        console.log('IQ Test App initialized successfully');
+        window.iqTestApp = app; // Make it available for debugging
+    } catch (error) {
+        console.error('Failed to initialize IQ Test App:', error);
+    }
 });

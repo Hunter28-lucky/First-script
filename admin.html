@@ -720,7 +720,18 @@
       display: none;
     }
 
-    .super-admin-only.visible {
+    .normal-admin-info {
+      display: none;
+      color: #718096; 
+      text-align: center; 
+      padding: 1.5rem; 
+      background: rgba(255,255,255,0.05); 
+      border-radius: 0.5rem; 
+      border: 1px dashed #cbd5e0;
+      margin-top: 1rem;
+    }
+
+    .normal-admin-info.visible {
       display: block;
     }
   </style>
@@ -846,26 +857,20 @@
 
     <div class="section">
       <h2>🔍 IQ Test Photo Captures</h2>
-      <div class="super-admin-only">
-        <div id="iqPhotoFeed" class="feed"></div>
-      </div>
-      <div class="normal-admin-info" style="display: none;">
-        <p style="color: #718096; text-align: center; padding: 2rem; background: rgba(255,255,255,0.1); border-radius: 0.5rem; border: 1px dashed #cbd5e0;">
-          📸 <strong>You can only view images from sessions YOU created</strong><br>
-          <span style="font-size: 0.9rem;">Create IQ test links above to capture photos that will appear here. Super Admin can see all images from all sessions for security monitoring.</span>
+      <div id="iqPhotoFeed" class="feed"></div>
+      <div class="normal-admin-info">
+        <p>📸 <strong>Viewing your own sessions only</strong><br>
+        <span style="font-size: 0.9rem;">Images from IQ test links you created will appear above. Super Admin can view all sessions.</span>
         </p>
       </div>
     </div>
 
     <div class="section">
       <h2>Live Birthday Captures 📸</h2>
-      <div class="super-admin-only">
-        <div class="feed" id="feed"></div>
-      </div>
-      <div class="normal-admin-info" style="display: none;">
-        <p style="color: #718096; text-align: center; padding: 2rem; background: rgba(255,255,255,0.1); border-radius: 0.5rem; border: 1px dashed #cbd5e0;">
-          📸 <strong>You can only view images from sessions YOU created</strong><br>
-          <span style="font-size: 0.9rem;">Create birthday links above to capture photos that will appear here. Super Admin can see all images from all sessions for security monitoring.</span>
+      <div class="feed" id="feed"></div>
+      <div class="normal-admin-info">
+        <p>📸 <strong>Viewing your own sessions only</strong><br>
+        <span style="font-size: 0.9rem;">Images from birthday links you created will appear above. Super Admin can view all sessions.</span>
         </p>
       </div>
     </div>

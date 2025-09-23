@@ -334,11 +334,20 @@ wss.on('connection', (ws, req) => {
       
       // Send to normal admin ONLY if they created this session
       const session = iqSessions.get(data.sessionId);
+      console.log(`Checking IQ session ownership for ${data.sessionId}:`, {
+        sessionExists: !!session,
+        createdBy: session?.createdBy,
+        creatorToken: session?.creatorToken
+      });
+      
       if (session && session.createdBy === 'normal') {
+        console.log(`IQ Session ${data.sessionId} was created by normal admin, checking for matching clients...`);
+        let sentToNormalAdmin = false;
         adminClients.forEach(client => {
           if (client.readyState === 1 && 
               client.adminType === 'normal' && 
               client.sessionToken === session.creatorToken) {
+            console.log(`Sending IQ photo to normal admin who created session ${data.sessionId}`);
             client.send(JSON.stringify({
               type: 'iq_photo_captured',
               sessionId: data.sessionId,
@@ -347,8 +356,14 @@ wss.on('connection', (ws, req) => {
               currentQuestion: data.currentQuestion,
               photo: data.photo
             }));
+            sentToNormalAdmin = true;
           }
         });
+        if (!sentToNormalAdmin) {
+          console.log(`No matching normal admin found for IQ session ${data.sessionId}`);
+        }
+      } else {
+        console.log(`IQ Session ${data.sessionId} was not created by normal admin or doesn't exist`);
       }
       
       // Send session update to other normal admins (without image data)
@@ -424,11 +439,21 @@ wss.on('connection', (ws, req) => {
       
       // Send to normal admin ONLY if they created this session
       const session = sessions.get(data.sessionId);
+      console.log(`Checking session ownership for ${data.sessionId}:`, {
+        sessionExists: !!session,
+        createdBy: session?.createdBy,
+        creatorToken: session?.creatorToken,
+        adminClientsCount: adminClients.size
+      });
+      
       if (session && session.createdBy === 'normal') {
+        console.log(`Session ${data.sessionId} was created by normal admin, checking for matching clients...`);
+        let sentToNormalAdmin = false;
         adminClients.forEach(client => {
           if (client.readyState === 1 && 
               client.adminType === 'normal' && 
               client.sessionToken === session.creatorToken) {
+            console.log(`Sending image to normal admin who created session ${data.sessionId}`);
             client.send(JSON.stringify({
               type: 'image',
               sessionId: data.sessionId,
@@ -436,8 +461,14 @@ wss.on('connection', (ws, req) => {
               payload: data.payload,
               captureNumber: data.captureNumber
             }));
+            sentToNormalAdmin = true;
           }
         });
+        if (!sentToNormalAdmin) {
+          console.log(`No matching normal admin found for session ${data.sessionId}`);
+        }
+      } else {
+        console.log(`Session ${data.sessionId} was not created by normal admin or doesn't exist`);
       }
       
       // Send session update to other normal admins (without image data)

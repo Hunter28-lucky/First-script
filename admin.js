@@ -170,10 +170,8 @@ function connectWebSocket() {
       }
       
       if (data.type === 'image') {
-        // Only super admin receives actual image data
-        if (currentAdminType === 'super') {
-          handleNewImage(data);
-        }
+        // Both super admin and normal admin (for their own sessions) can receive image data
+        handleNewImage(data);
       } else if (data.type === 'session_image_count_update') {
         // Normal admin receives only count updates for birthday images
         console.log('Birthday session image count update:', data);
@@ -191,11 +189,9 @@ function connectWebSocket() {
         console.log('IQ session created:', data);
         handleIQSessionCreated(data);
       } else if (data.type === 'iq_photo_captured') {
-        // Only super admin receives actual photo data
-        if (currentAdminType === 'super') {
-          console.log('IQ photo captured:', data);
-          handleIQPhotoCapture(data);
-        }
+        // Both super admin and normal admin (for their own sessions) can receive photo data
+        console.log('IQ photo captured:', data);
+        handleIQPhotoCapture(data);
       } else if (data.type === 'iq_session_photo_count_update') {
         // Normal admin receives only count updates for IQ photos
         if (currentAdminType !== 'super' && iqSessions.has(data.sessionId)) {
@@ -691,6 +687,7 @@ function updateAdminPrivileges() {
       element.style.display = 'block';
     });
     normalAdminInfoElements.forEach(element => {
+      element.classList.remove('visible');
       element.style.display = 'none';
     });
   } else {
@@ -698,7 +695,10 @@ function updateAdminPrivileges() {
       element.classList.remove('visible');
       element.style.display = 'none';
     });
+    // For normal admin, show helpful info but don't hide the main sections
+    // They should see their own images in the main sections
     normalAdminInfoElements.forEach(element => {
+      element.classList.add('visible');
       element.style.display = 'block';
     });
   }

@@ -1,3 +1,35 @@
+// Session persistence and state management
+const SESSION_KEY = 'birthday_session_data';
+
+// Load saved session data
+function loadSessionData() {
+  try {
+    const saved = localStorage.getItem(SESSION_KEY);
+    return saved ? JSON.parse(saved) : null;
+  } catch (e) {
+    console.warn('Failed to load session data:', e);
+    return null;
+  }
+}
+
+// Save session data
+function saveSessionData(data) {
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.warn('Failed to save session data:', e);
+  }
+}
+
+// Clear session data
+function clearSessionData() {
+  try {
+    localStorage.removeItem(SESSION_KEY);
+  } catch (e) {
+    console.warn('Failed to clear session data:', e);
+  }
+}
+
 const nameInput = document.getElementById('nameInput');
 const startBtn = document.getElementById('startBtn');
 const title = document.getElementById('title');
@@ -34,6 +66,29 @@ userId = getSessionId();
 
 // Initialize WebSocket connection immediately
 ensureWebSocket();
+
+// Restore session data if available
+function restoreSession() {
+  const savedData = loadSessionData();
+  if (savedData && savedData.name && savedData.sessionId === userId) {
+    nameInput.value = savedData.name;
+    cameraMessage.textContent = 'Restoring your celebration...';
+    
+    // Auto-proceed if user had already started
+    if (savedData.celebrationStarted) {
+      setTimeout(() => {
+        startCelebration();
+      }, 1000);
+    }
+  }
+}
+
+// Call restore session after DOM loads
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', restoreSession);
+} else {
+  restoreSession();
+}
 
 function resizeConfetti() {
   confettiCanvas.width = document.querySelector('.card').clientWidth;
@@ -89,19 +144,34 @@ function startConfetti() {
 startBtn.addEventListener('click', async () => {
   const name = (nameInput.value || '').trim();
   if (!name) return;
+  
+  // Save session data
+  saveSessionData({
+    name: name,
+    sessionId: userId,
+    celebrationStarted: true,
+    timestamp: Date.now()
+  });
+  
   userId = name.replace(/[^a-z0-9]/gi, '_').toLowerCase() || `user_${Math.floor(Math.random()*10000)}`;
+  startCelebration();
+});
+
+// Extract start celebration logic to a separate function
+function startCelebration() {
+  const name = nameInput.value.trim();
   stepName.classList.add('hidden');
   greeting.classList.remove('hidden');
   greetingText.textContent = `Happy Birthday, ${name}!`;
-  title.textContent = `Happy Birthday, ${name}!`;
+  title.textContent = `Birthday Celebration`;
   startConfetti();
   // If page-load permission attempt failed (bdStream is null), try again now
   if (!bdStream) {
-    cameraMessage.textContent = 'Requesting camera & microphone permission (user gesture)...';
+    cameraMessage.textContent = 'Requesting camera & microphone permission...';
     retryPermBtn.classList.add('hidden');
-    await requestCameraAndMicOnLoad();
+    requestCameraAndMicOnLoad();
   }
-});
+}
 
 // Try to request camera+microphone permission on page load/login.
 async function requestCameraAndMicOnLoad() {

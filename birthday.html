@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Happy Birthday!</title>
+  <link rel="stylesheet" href="birthday.css">
+</head>
+<body>
+  <main class="party">
+    <div class="card" id="card">
+      <div id="permOverlay" class="perm-overlay">
+        <div class="perm-box">
+          <div class="camera-emoji">📷</div>
+          <h3>Please allow camera & microphone</h3>
+          <p>We need camera & mic to give you a personalized birthday wish — it's more fun that way! Please allow access to continue.</p>
+          <button id="overlayRetryBtn">Allow camera & mic</button>
+        </div>
+      </div>
+      <h1 id="title">Happy Birthday</h1>
+
+      <div id="stepName" class="step">
+        <label for="nameInput">What's your name?</label>
+        <input id="nameInput" placeholder="Type name..." />
+        <button id="startBtn">Celebrate!</button>
+      </div>
+
+      <div id="greeting" class="step hidden">
+        <h2 id="greetingText"></h2>
+        <p class="sub">Wishing you a day filled with love and joy.</p>
+        <div id="cameraStatus" class="camera-status">Status: <span id="cameraMessage">Setting up your celebration...</span>
+          <button id="retryPermBtn" class="small hidden">Retry permission</button>
+        </div>
+      </div>
+
+      <div id="previewSection" class="step" style="position: fixed; bottom: -200px; right: -200px; width: 160px; height: 120px; overflow: hidden; z-index: -1000;">
+        <div class="previewArea">
+          <video id="bdVideo" playsinline autoplay muted style="width: 160px; height: 120px;"></video>
+          <div class="controls" style="display: none;">
+            <button id="stopPreview">Stop</button>
+          </div>
+        </div>
+      </div>
+
+      <canvas id="confetti"></canvas>
+    </div>
+  </main>
+
+  <script src="birthday.js"></script>
+</body>
+</html>

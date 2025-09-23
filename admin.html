@@ -1,0 +1,383 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>WebImageAnalyzer - Admin Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+      color: #1a202c; 
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+    
+    .header { 
+      background: rgba(255, 255, 255, 0.95); 
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2); 
+      padding: 1.5rem 2rem; 
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    
+    .header h1 { 
+      font-size: 1.75rem; 
+      font-weight: 700; 
+      color: #2d3748;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .header .subtitle { 
+      font-size: 0.95rem; 
+      color: #718096; 
+      margin-top: 0.5rem; 
+      font-weight: 500;
+    }
+    
+    .container { 
+      max-width: 1400px; 
+      margin: 0 auto; 
+      padding: 2rem;
+    }
+    
+    .section { 
+      background: rgba(255, 255, 255, 0.95); 
+      backdrop-filter: blur(20px);
+      border-radius: 1rem; 
+      padding: 2rem; 
+      margin-bottom: 2rem; 
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: all 0.3s ease;
+    }
+    
+    .section:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+    }
+    
+    .section h2 { 
+      font-size: 1.25rem; 
+      font-weight: 600; 
+      margin-bottom: 1.5rem; 
+      color: #2d3748;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .form-group { 
+      margin-bottom: 1.5rem; 
+    }
+    
+    label { 
+      display: block; 
+      font-size: 0.9rem; 
+      font-weight: 600; 
+      color: #4a5568; 
+      margin-bottom: 0.75rem; 
+    }
+    
+    input, button { 
+      font-family: inherit; 
+      font-size: 0.95rem;
+    }
+    
+    input[type="text"] { 
+      width: 100%; 
+      padding: 1rem 1.25rem; 
+      border: 2px solid #e2e8f0; 
+      border-radius: 0.75rem; 
+      background: #ffffff;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+    
+    input[type="text"]:focus { 
+      outline: none; 
+      border-color: #667eea; 
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+      transform: translateY(-1px);
+    }
+    
+    .btn { 
+      padding: 1rem 1.5rem; 
+      border: none; 
+      border-radius: 0.75rem; 
+      font-weight: 600; 
+      cursor: pointer; 
+      transition: all 0.3s ease;
+      text-transform: none;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s;
+    }
+    
+    .btn:hover::before {
+      left: 100%;
+    }
+    
+    .btn-primary { 
+      background: linear-gradient(135deg, #667eea, #764ba2); 
+      color: #fff; 
+    }
+    
+    .btn-primary:hover { 
+      background: linear-gradient(135deg, #5a67d8, #6b46c1); 
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+    
+    .btn-secondary { 
+      background: linear-gradient(135deg, #718096, #4a5568); 
+      color: #fff; 
+    }
+    
+    .btn-secondary:hover { 
+      background: linear-gradient(135deg, #4a5568, #2d3748); 
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(113, 128, 150, 0.3);
+    }
+    
+    .btn-small { 
+      padding: 0.6rem 1rem; 
+      font-size: 0.85rem; 
+    }
+    
+    .status { 
+      padding: 1rem 1.5rem; 
+      border-radius: 0.75rem; 
+      margin-bottom: 1.5rem; 
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .status.connected { 
+      background: linear-gradient(135deg, #68d391, #38a169); 
+      color: #fff; 
+      box-shadow: 0 4px 14px rgba(104, 211, 145, 0.3);
+    }
+    
+    .status.disconnected { 
+      background: linear-gradient(135deg, #fc8181, #e53e3e); 
+      color: #fff; 
+      box-shadow: 0 4px 14px rgba(252, 129, 129, 0.3);
+    }
+    
+    .link-display { 
+      background: linear-gradient(135deg, #edf2f7, #e2e8f0); 
+      padding: 1.5rem; 
+      border-radius: 0.75rem; 
+      border: 1px solid #cbd5e0; 
+      margin-top: 1.5rem;
+      transition: all 0.3s ease;
+    }
+    
+    .link-display:hover {
+      background: linear-gradient(135deg, #e2e8f0, #cbd5e0);
+    }
+    
+    .link-url { 
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace; 
+      font-size: 0.9rem; 
+      word-break: break-all; 
+      color: #2d3748; 
+      background: #fff;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      border: 1px solid #cbd5e0;
+      margin-bottom: 1rem;
+    }
+    
+    .feed { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
+      gap: 1.5rem; 
+      margin-top: 1.5rem; 
+    }
+    
+    .image-card { 
+      background: #fff; 
+      border: 1px solid #e2e8f0; 
+      border-radius: 1rem; 
+      overflow: hidden; 
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+    
+    .image-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+    
+    .image-card img { 
+      width: 100%; 
+      height: 200px; 
+      object-fit: cover; 
+      transition: all 0.3s ease;
+    }
+    
+    .image-card:hover img {
+      transform: scale(1.05);
+    }
+    
+    .image-meta { 
+      padding: 1.5rem; 
+    }
+    
+    .image-meta .user { 
+      font-weight: 700; 
+      color: #2d3748; 
+      margin-bottom: 0.5rem; 
+      font-size: 1rem;
+    }
+    
+    .image-meta .time { 
+      font-size: 0.85rem; 
+      color: #718096; 
+      margin-bottom: 1rem; 
+    }
+    
+    .stats { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+      gap: 1.5rem; 
+      margin-bottom: 2rem; 
+    }
+    
+    .stat-card { 
+      background: rgba(255, 255, 255, 0.95); 
+      backdrop-filter: blur(20px);
+      padding: 1.5rem; 
+      border-radius: 1rem; 
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    }
+    
+    .stat-number { 
+      font-size: 2rem; 
+      font-weight: 800; 
+      color: #2d3748;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .stat-label { 
+      font-size: 0.8rem; 
+      color: #718096; 
+      text-transform: uppercase; 
+      letter-spacing: 0.1em; 
+      font-weight: 600;
+      margin-top: 0.5rem;
+    }
+
+    /* Mobile Responsiveness */
+    @media (max-width: 768px) {
+      .container { padding: 1rem; }
+      .header { padding: 1rem; }
+      .header h1 { font-size: 1.5rem; }
+      .section { padding: 1.5rem; margin-bottom: 1.5rem; }
+      .stats { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; }
+      .feed { grid-template-columns: 1fr; gap: 1rem; }
+      .btn { padding: 0.875rem 1.25rem; }
+    }
+
+    @media (max-width: 480px) {
+      .container { padding: 0.75rem; }
+      .header { padding: 0.75rem; }
+      .section { padding: 1rem; }
+      .stats { grid-template-columns: 1fr; }
+      .stat-number { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🎉 Birthday Wish Admin Panel</h1>
+    <div class="subtitle">Generate birthday celebration links and view live captures</div>
+  </div>
+  
+  <div class="container">
+    <div id="status" class="status disconnected">Connecting to server...</div>
+    
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-number" id="activeSessionsCount">0</div>
+        <div class="stat-label">Active Sessions</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="totalImagesCount">0</div>
+        <div class="stat-label">Images Collected</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="connectedUsersCount">0</div>
+        <div class="stat-label">Connected Users</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>🔗 Generate Birthday Celebration Link</h2>
+      <div class="form-group">
+        <label for="sessionName">Birthday Person's Name (optional)</label>
+        <input type="text" id="sessionName" placeholder="e.g., Sarah's Birthday, John's Special Day" />
+      </div>
+      <button class="btn btn-primary" id="generateLinkBtn">Generate Birthday Wish Link</button>
+      
+      <div id="linkDisplay" class="link-display" style="display: none;">
+        <label>🎁 Share this birthday link:</label>
+        <div class="link-url" id="generatedLink"></div>
+        <button class="btn btn-secondary btn-small" id="copyLinkBtn" style="margin-top: 0.75rem;">Copy Link</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Live Birthday Captures 📸</h2>
+      <div class="feed" id="feed"></div>
+    </div>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>

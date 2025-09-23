@@ -1,0 +1,20 @@
+{
+  "name": "birthday-wish-system",
+  "version": "1.0.0",
+  "description": "Birthday celebration system with live image capture and admin panel",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "ws": "^8.13.0"
+  },
+  "keywords": ["birthday", "webcam", "celebration", "admin-panel"],
+  "author": "Your Name",
+  "license": "MIT"
+}

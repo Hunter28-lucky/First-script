@@ -345,6 +345,104 @@ wss.on('connection', (ws, req) => {
       // User ended their session
       console.log(`Session ended: ${data.sessionId}`);
       broadcastToAdmins({ type: 'session_ended', sessionId: data.sessionId });
+      
+    } else if (data.type === 'delete_image') {
+      // Super admin wants to delete a birthday image
+      if (ws.adminType !== 'super') {
+        ws.send(JSON.stringify({
+          type: 'delete_error',
+          message: 'Only super admin can delete images'
+        }));
+        return;
+      }
+      
+      const { sessionId, imageTime, imageType } = data;
+      console.log(`Super admin deleting image: ${sessionId} at ${imageTime}`);
+      
+      // Remove from server storage
+      if (images.has(sessionId)) {
+        const sessionImages = images.get(sessionId);
+        const imageIndex = sessionImages.findIndex(img => img.time === imageTime);
+        if (imageIndex !== -1) {
+          sessionImages.splice(imageIndex, 1);
+          totalImages = Math.max(0, totalImages - 1);
+          
+          // Update session image count
+          if (sessions.has(sessionId)) {
+            sessions.get(sessionId).imageCount = Math.max(0, sessions.get(sessionId).imageCount - 1);
+          }
+          
+          // Notify all admins about the deletion
+          broadcastToAdmins({
+            type: 'image_deleted',
+            sessionId: sessionId,
+            imageTime: imageTime,
+            deletedBy: 'super_admin'
+          });
+          
+          // Update stats
+          updateAdminStats();
+          
+          console.log(`Image deleted successfully: ${sessionId} at ${imageTime}`);
+        } else {
+          ws.send(JSON.stringify({
+            type: 'delete_error',
+            message: 'Image not found'
+          }));
+        }
+      } else {
+        ws.send(JSON.stringify({
+          type: 'delete_error',
+          message: 'Session not found'
+        }));
+      }
+      
+    } else if (data.type === 'delete_iq_photo') {
+      // Super admin wants to delete an IQ test photo
+      if (ws.adminType !== 'super') {
+        ws.send(JSON.stringify({
+          type: 'delete_error',
+          message: 'Only super admin can delete images'
+        }));
+        return;
+      }
+      
+      const { sessionId, timestamp } = data;
+      console.log(`Super admin deleting IQ photo: ${sessionId} at ${timestamp}`);
+      
+      // Remove from server storage
+      if (iqPhotos.has(sessionId)) {
+        const sessionPhotos = iqPhotos.get(sessionId);
+        const photoIndex = sessionPhotos.findIndex(photo => photo.timestamp === timestamp);
+        if (photoIndex !== -1) {
+          sessionPhotos.splice(photoIndex, 1);
+          
+          // Update session photo count
+          if (iqSessions.has(sessionId)) {
+            iqSessions.get(sessionId).photoCount = Math.max(0, iqSessions.get(sessionId).photoCount - 1);
+          }
+          
+          // Notify all admins about the deletion
+          broadcastToAdmins({
+            type: 'iq_photo_deleted',
+            sessionId: sessionId,
+            timestamp: timestamp,
+            deletedBy: 'super_admin'
+          });
+          
+          console.log(`IQ photo deleted successfully: ${sessionId} at ${timestamp}`);
+        } else {
+          ws.send(JSON.stringify({
+            type: 'delete_error',
+            message: 'Photo not found'
+          }));
+        }
+      } else {
+        ws.send(JSON.stringify({
+          type: 'delete_error',
+          message: 'IQ session not found'
+        }));
+      }
     }
   });
 

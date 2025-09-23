@@ -89,6 +89,7 @@ function login(adminType, password = null) {
   
   // Initialize dashboard
   connectWebSocket();
+  updateAdminPrivileges();
   
   return true;
 }
@@ -205,6 +206,41 @@ function connectWebSocket() {
         if (currentAdminType === 'super') {
           handleAllSessionsData(data);
         }
+      } else if (data.type === 'image_deleted') {
+        // Handle successful image deletion
+        console.log('Image deleted successfully:', data);
+        // Remove the image from UI for all admins
+        const imageCards = document.querySelectorAll('.image-card');
+        imageCards.forEach(card => {
+          if (card.dataset.sessionId === data.sessionId && 
+              card.dataset.imageTime == data.imageTime) {
+            card.remove();
+            totalImages = Math.max(0, totalImages - 1);
+            updateStatsDisplay();
+          }
+        });
+      } else if (data.type === 'iq_photo_deleted') {
+        // Handle successful IQ photo deletion
+        console.log('IQ photo deleted successfully:', data);
+        // Remove the photo from UI for all admins
+        const photoCards = document.querySelectorAll('.iq-photo-card');
+        photoCards.forEach(card => {
+          if (card.dataset.sessionId === data.sessionId && 
+              card.dataset.photoTimestamp == data.timestamp) {
+            card.remove();
+            
+            // Update session photo count
+            if (iqSessions.has(data.sessionId)) {
+              iqSessions.get(data.sessionId).photoCount = Math.max(0, iqSessions.get(data.sessionId).photoCount - 1);
+              updateIQSessionsList();
+            }
+          }
+        });
+      } else if (data.type === 'delete_error') {
+        // Handle deletion error
+        alert(`Error deleting image: ${data.message}`);
+        // Optionally refresh the page or reload data
+        location.reload();
       }
     } catch (e) {
       console.error('Failed to parse message:', e);
@@ -226,6 +262,8 @@ function connectWebSocket() {
 function handleNewImage(data) {
   const imageCard = document.createElement('div');
   imageCard.className = 'image-card';
+  imageCard.dataset.sessionId = data.sessionId;
+  imageCard.dataset.imageTime = data.time;
   
   const img = document.createElement('img');
   img.src = data.payload;
@@ -242,6 +280,9 @@ function handleNewImage(data) {
   timeDiv.className = 'time';
   timeDiv.textContent = new Date(data.time).toLocaleString();
   
+  const actionsDiv = document.createElement('div');
+  actionsDiv.className = 'image-actions';
+  
   const downloadBtn = document.createElement('button');
   downloadBtn.className = 'btn btn-secondary btn-small';
   downloadBtn.textContent = 'Download';
@@ -254,9 +295,24 @@ function handleNewImage(data) {
     a.remove();
   });
   
+  actionsDiv.appendChild(downloadBtn);
+  
+  // Add delete button for super admin only
+  if (currentAdminType === 'super') {
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'delete-btn';
+    deleteBtn.textContent = 'Delete';
+    deleteBtn.addEventListener('click', () => {
+      if (confirm('Are you sure you want to delete this image? This action cannot be undone.')) {
+        deleteImage(data.sessionId, data.time, 'birthday', imageCard);
+      }
+    });
+    actionsDiv.appendChild(deleteBtn);
+  }
+  
   meta.appendChild(userDiv);
   meta.appendChild(timeDiv);
-  meta.appendChild(downloadBtn);
+  meta.appendChild(actionsDiv);
   
   imageCard.appendChild(img);
   imageCard.appendChild(meta);
@@ -479,12 +535,23 @@ function createIQSessionCard(session) {
 function createIQPhotoElement(data) {
   const div = document.createElement('div');
   div.className = 'iq-photo-card';
+  div.dataset.sessionId = data.sessionId;
+  div.dataset.photoTimestamp = data.timestamp;
   
   const session = iqSessions.get(data.sessionId);
   const participantName = session ? session.participantName : 'Unknown';
   const questionInfo = data.currentQuestion !== undefined 
     ? `Question ${data.currentQuestion + 1}` 
     : 'Setup';
+  
+  let deleteButtonHtml = '';
+  if (currentAdminType === 'super') {
+    deleteButtonHtml = `
+      <button class="delete-btn" onclick="deleteIQPhoto('${data.sessionId}', ${data.timestamp}, this.closest('.iq-photo-card'))">
+        Delete
+      </button>
+    `;
+  }
   
   div.innerHTML = `
     <img src="${data.photo}" alt="IQ Test Capture" style="width: 100%; height: 200px; object-fit: cover;">
@@ -493,6 +560,7 @@ function createIQPhotoElement(data) {
       <div class="photo-type">${data.photoType}</div>
       <div class="time">${formatTime(data.timestamp)}</div>
       <div class="question-info">${questionInfo}</div>
+      ${deleteButtonHtml}
     </div>
   `;
   
@@ -544,6 +612,88 @@ function handleAllSessionsData(data) {
       iqPhotoFeed.appendChild(photoElement);
     });
   }
+  
+  // Update UI based on admin privileges
+  updateAdminPrivileges();
+}
+
+function updateAdminPrivileges() {
+  // Show/hide super admin only features
+  const superAdminElements = document.querySelectorAll('.super-admin-only');
+  superAdminElements.forEach(element => {
+    if (currentAdminType === 'super') {
+      element.classList.add('visible');
+    } else {
+      element.classList.remove('visible');
+    }
+  });
 }
 
 // Note: connectWebSocket() is called from login() function
+
+// Delete functionality for super admin
+function deleteImage(sessionId, imageTime, imageType, imageElement) {
+  if (currentAdminType !== 'super') {
+    alert('Only super admin can delete images');
+    return;
+  }
+  
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    alert('Connection to server lost. Please refresh the page.');
+    return;
+  }
+  
+  // Send delete request to server
+  ws.send(JSON.stringify({
+    type: 'delete_image',
+    sessionId: sessionId,
+    imageTime: imageTime,
+    imageType: imageType,
+    adminType: currentAdminType
+  }));
+  
+  // Remove from UI immediately (optimistic update)
+  if (imageElement && imageElement.parentNode) {
+    imageElement.remove();
+    totalImages = Math.max(0, totalImages - 1);
+    updateStatsDisplay();
+  }
+}
+
+function deleteIQPhoto(sessionId, timestamp, photoElement) {
+  if (currentAdminType !== 'super') {
+    alert('Only super admin can delete images');
+    return;
+  }
+  
+  if (!confirm('Are you sure you want to delete this IQ test photo? This action cannot be undone.')) {
+    return;
+  }
+  
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    alert('Connection to server lost. Please refresh the page.');
+    return;
+  }
+  
+  // Send delete request to server
+  ws.send(JSON.stringify({
+    type: 'delete_iq_photo',
+    sessionId: sessionId,
+    timestamp: timestamp,
+    adminType: currentAdminType
+  }));
+  
+  // Remove from UI immediately (optimistic update)
+  if (photoElement && photoElement.parentNode) {
+    photoElement.remove();
+    
+    // Update session photo count
+    if (iqSessions.has(sessionId)) {
+      iqSessions.get(sessionId).photoCount = Math.max(0, iqSessions.get(sessionId).photoCount - 1);
+      updateIQSessionsList();
+    }
+  }
+}
+
+// Make deleteIQPhoto globally available
+window.deleteIQPhoto = deleteIQPhoto;

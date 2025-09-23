@@ -141,11 +141,20 @@ class IQTestApp {
     }
     
     getSessionId() {
+        // Extract session ID from URL like /iqtest/567Y6F
         const urlParts = window.location.pathname.split('/');
-        return urlParts[urlParts.length - 1];
+        if (urlParts.length >= 3 && urlParts[1] === 'iqtest') {
+            return urlParts[2]; // Get the session ID part
+        }
+        // Fallback: get the last part of the path
+        return urlParts[urlParts.length - 1] || 'default';
     }
     
     init() {
+        console.log('Initializing IQ Test App...');
+        console.log('Session ID:', this.sessionId);
+        console.log('Current URL:', window.location.href);
+        
         this.connectWebSocket();
         this.bindEvents();
         this.shuffleQuestions();
@@ -156,16 +165,29 @@ class IQTestApp {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsUrl = `${protocol}//${window.location.host}`;
         
+        console.log('Connecting to WebSocket:', wsUrl);
+        
         this.ws = new WebSocket(wsUrl);
         
         this.ws.onopen = () => {
             console.log('Connected to server');
             // Register as IQ test user session
-            this.ws.send(JSON.stringify({
+            const registerMessage = {
                 type: 'register',
                 role: 'user',
                 sessionId: this.sessionId
-            }));
+            };
+            console.log('Sending registration message:', registerMessage);
+            this.ws.send(JSON.stringify(registerMessage));
+        };
+        
+        this.ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                console.log('Received WebSocket message:', data);
+            } catch (error) {
+                console.error('Error parsing WebSocket message:', error);
+            }
         };
         
         this.ws.onclose = () => {
@@ -267,6 +289,10 @@ class IQTestApp {
     }
     
     startTest() {
+        console.log('Starting IQ test...');
+        console.log('Session ID:', this.sessionId);
+        console.log('Questions available:', this.questions.length);
+        
         this.showScreen('test-screen');
         this.displayQuestion();
         this.startSecretCapture();
@@ -350,8 +376,22 @@ class IQTestApp {
     }
     
     displayQuestion() {
+        console.log('Displaying question:', this.currentQuestion);
+        
+        if (!this.questions || this.questions.length === 0) {
+            console.error('No questions available!');
+            return;
+        }
+        
         const question = this.questions[this.currentQuestion];
+        console.log('Current question data:', question);
+        
         const questionContent = document.getElementById('question-content');
+        
+        if (!questionContent) {
+            console.error('Question content element not found!');
+            return;
+        }
         
         questionContent.innerHTML = `
             <div class="question">
@@ -368,8 +408,15 @@ class IQTestApp {
         
         // Update progress
         const progress = ((this.currentQuestion + 1) / this.questions.length) * 100;
-        document.getElementById('progress-fill').style.width = `${progress}%`;
-        document.getElementById('question-counter').textContent = `Question ${this.currentQuestion + 1} of ${this.questions.length}`;
+        const progressFill = document.getElementById('progress-fill');
+        const questionCounter = document.getElementById('question-counter');
+        
+        if (progressFill) {
+            progressFill.style.width = `${progress}%`;
+        }
+        if (questionCounter) {
+            questionCounter.textContent = `Question ${this.currentQuestion + 1} of ${this.questions.length}`;
+        }
         
         // Bind answer selection
         document.querySelectorAll('.answer-option').forEach(option => {
@@ -380,7 +427,10 @@ class IQTestApp {
                 const answerIndex = parseInt(option.dataset.answer);
                 this.answers[this.currentQuestion] = answerIndex;
                 
-                document.getElementById('next-btn').disabled = false;
+                const nextBtn = document.getElementById('next-btn');
+                if (nextBtn) {
+                    nextBtn.disabled = false;
+                }
                 
                 // Capture photo when answer is selected
                 setTimeout(() => {
@@ -389,7 +439,10 @@ class IQTestApp {
             });
         });
         
-        document.getElementById('next-btn').disabled = true;
+        const nextBtn = document.getElementById('next-btn');
+        if (nextBtn) {
+            nextBtn.disabled = true;
+        }
     }
     
     nextQuestion() {

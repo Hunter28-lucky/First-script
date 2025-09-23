@@ -32,16 +32,16 @@ app.get('/wish/:sessionId', (req, res) => {
 app.get('/iqtest/:sessionId', (req, res) => {
   const sessionId = req.params.sessionId;
   
-  // Check if IQ session exists
-  const sessionData = iqSessions.get(sessionId);
-  if (!sessionData) {
-    // Create a basic session if it doesn't exist
+  // Check if IQ session exists, create if it doesn't
+  if (!iqSessions.has(sessionId)) {
     iqSessions.set(sessionId, {
       id: sessionId,
       participantName: 'Anonymous',
       created: Date.now(),
-      status: 'active'
+      status: 'active',
+      photoCount: 0
     });
+    console.log(`IQ Session auto-created: ${sessionId}`);
   }
   
   // Serve the IQ test page
@@ -111,6 +111,21 @@ wss.on('connection', (ws, req) => {
         userClients.get(data.sessionId).add(ws);
         
         console.log(`User connected to session: ${data.sessionId}`);
+        
+        // For IQ test sessions, update the session and notify admins
+        if (iqSessions.has(data.sessionId)) {
+          const session = iqSessions.get(data.sessionId);
+          session.status = 'active';
+          session.lastActive = Date.now();
+          
+          // Notify admins about active IQ session
+          broadcastToAdmins({
+            type: 'iq_session_active',
+            sessionId: data.sessionId,
+            participantName: session.participantName,
+            status: session.status
+          });
+        }
         
         // Notify admins
         broadcastToAdmins({ type: 'user_connected', sessionId: data.sessionId });

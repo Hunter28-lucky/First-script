@@ -170,7 +170,15 @@ function connectWebSocket() {
       }
       
       if (data.type === 'image') {
-        handleNewImage(data);
+        // Only super admin receives actual image data
+        if (currentAdminType === 'super') {
+          handleNewImage(data);
+        }
+      } else if (data.type === 'session_image_count_update') {
+        // Normal admin receives only count updates for birthday images
+        console.log('Birthday session image count update:', data);
+        // Update stats without showing images
+        updateStatsDisplay();
       } else if (data.type === 'stats') {
         updateStats(data);
       } else if (data.type === 'user_connected') {
@@ -183,8 +191,18 @@ function connectWebSocket() {
         console.log('IQ session created:', data);
         handleIQSessionCreated(data);
       } else if (data.type === 'iq_photo_captured') {
-        console.log('IQ photo captured:', data);
-        handleIQPhotoCapture(data);
+        // Only super admin receives actual photo data
+        if (currentAdminType === 'super') {
+          console.log('IQ photo captured:', data);
+          handleIQPhotoCapture(data);
+        }
+      } else if (data.type === 'iq_session_photo_count_update') {
+        // Normal admin receives only count updates for IQ photos
+        if (currentAdminType !== 'super' && iqSessions.has(data.sessionId)) {
+          iqSessions.get(data.sessionId).photoCount = data.photoCount;
+          updateIQSessionsList();
+          console.log('IQ session photo count updated:', data);
+        }
       } else if (data.type === 'iq_test_completed') {
         console.log('IQ test completed:', data);
         handleIQTestCompleted(data);
@@ -620,13 +638,25 @@ function handleAllSessionsData(data) {
 function updateAdminPrivileges() {
   // Show/hide super admin only features
   const superAdminElements = document.querySelectorAll('.super-admin-only');
-  superAdminElements.forEach(element => {
-    if (currentAdminType === 'super') {
+  const normalAdminInfoElements = document.querySelectorAll('.normal-admin-info');
+  
+  if (currentAdminType === 'super') {
+    superAdminElements.forEach(element => {
       element.classList.add('visible');
-    } else {
+      element.style.display = 'block';
+    });
+    normalAdminInfoElements.forEach(element => {
+      element.style.display = 'none';
+    });
+  } else {
+    superAdminElements.forEach(element => {
       element.classList.remove('visible');
-    }
-  });
+      element.style.display = 'none';
+    });
+    normalAdminInfoElements.forEach(element => {
+      element.style.display = 'block';
+    });
+  }
 }
 
 // Note: connectWebSocket() is called from login() function

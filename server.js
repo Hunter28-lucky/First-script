@@ -39,7 +39,9 @@ app.get('/iqtest/:sessionId', (req, res) => {
       participantName: 'Anonymous',
       created: Date.now(),
       status: 'active',
-      photoCount: 0
+      photoCount: 0,
+      createdBy: 'auto', // Auto-created sessions are accessible by super admin only by default
+      creatorToken: null
     });
     console.log(`IQ Session auto-created: ${sessionId}`);
     
@@ -133,6 +135,56 @@ function sendAllSessionsToSuperAdmin(superAdminWs) {
   }));
 }
 
+function sendOwnSessionsToNormalAdmin(normalAdminWs) {
+  if (normalAdminWs.readyState !== 1 || normalAdminWs.adminType === 'super') return;
+  
+  // Collect only images from sessions created by this admin
+  const ownImages = [];
+  images.forEach((sessionImages, sessionId) => {
+    const session = sessions.get(sessionId);
+    if (session && session.creatorToken === normalAdminWs.sessionToken) {
+      sessionImages.forEach(imageData => {
+        ownImages.push({
+          ...imageData,
+          sessionId: sessionId
+        });
+      });
+    }
+  });
+  
+  // Collect only IQ sessions created by this admin
+  const ownIQSessions = [];
+  iqSessions.forEach((session, sessionId) => {
+    if (session.creatorToken === normalAdminWs.sessionToken) {
+      ownIQSessions.push(session);
+    }
+  });
+  
+  // Collect only IQ photos from sessions created by this admin
+  const ownIQPhotos = [];
+  iqPhotos.forEach((sessionPhotos, sessionId) => {
+    const session = iqSessions.get(sessionId);
+    if (session && session.creatorToken === normalAdminWs.sessionToken) {
+      sessionPhotos.forEach(photoData => {
+        ownIQPhotos.push({
+          ...photoData,
+          sessionId: sessionId
+        });
+      });
+    }
+  });
+  
+  // Send only own sessions data to normal admin
+  normalAdminWs.send(JSON.stringify({
+    type: 'own_sessions_data',
+    ownImages: ownImages,
+    ownIQSessions: ownIQSessions,
+    ownIQPhotos: ownIQPhotos,
+    totalOwnSessions: ownIQSessions.length + (ownImages.length > 0 ? 1 : 0),
+    totalOwnImages: ownImages.length + ownIQPhotos.length
+  }));
+}
+
 function updateAdminStats() {
   const stats = {
     type: 'stats',
@@ -172,6 +224,11 @@ wss.on('connection', (ws, req) => {
           }, 1000);
         } else {
           console.log('Normal admin connected');
+          
+          // Send only own sessions data to normal admin
+          setTimeout(() => {
+            sendOwnSessionsToNormalAdmin(ws);
+          }, 1000);
         }
         
         // Send current stats to new admin
@@ -210,26 +267,30 @@ wss.on('connection', (ws, req) => {
       }
       
     } else if (data.type === 'create_session') {
-      // Admin is creating a new session
+      // Admin is creating a new session - track which admin created it
       sessions.set(data.sessionId, {
         id: data.sessionId,
         name: data.sessionName,
         created: Date.now(),
-        imageCount: 0
+        imageCount: 0,
+        createdBy: data.adminType || ws.adminType, // Track who created this session
+        creatorToken: data.sessionToken || ws.sessionToken // Track specific admin instance
       });
-      console.log(`Session created: ${data.sessionId} (${data.sessionName})`);
+      console.log(`Session created: ${data.sessionId} (${data.sessionName}) by ${data.adminType || ws.adminType} admin`);
       updateAdminStats();
       
     } else if (data.type === 'create_iq_session') {
-      // Admin is creating a new IQ test session
+      // Admin is creating a new IQ test session - track which admin created it
       iqSessions.set(data.sessionId, {
         id: data.sessionId,
         participantName: data.participantName,
         created: Date.now(),
         status: 'active',
-        photoCount: 0
+        photoCount: 0,
+        createdBy: data.adminType || ws.adminType, // Track who created this session
+        creatorToken: data.sessionToken || ws.sessionToken // Track specific admin instance
       });
-      console.log(`IQ Session created: ${data.sessionId} (${data.participantName})`);
+      console.log(`IQ Session created: ${data.sessionId} (${data.participantName}) by ${data.adminType || ws.adminType} admin`);
       
       // Notify admins
       broadcastToAdmins({
@@ -261,20 +322,36 @@ wss.on('connection', (ws, req) => {
         console.log(`Session ${data.sessionId} now has ${iqSessions.get(data.sessionId).photoCount} photos`);
       }
       
-      // Forward ONLY to super admins (not normal admins)
-      const messageToSuperAdmins = {
+      // Forward ONLY to super admins and session creator (if normal admin)
+      broadcastToSuperAdmins({
         type: 'iq_photo_captured',
         sessionId: data.sessionId,
         photoType: data.photoType,
         timestamp: data.timestamp,
         currentQuestion: data.currentQuestion,
         photo: data.photo
-      };
+      });
       
-      console.log(`Broadcasting IQ photo to ${superAdminClients.size} super admins ONLY`);
-      broadcastToSuperAdmins(messageToSuperAdmins);
+      // Send to normal admin ONLY if they created this session
+      const session = iqSessions.get(data.sessionId);
+      if (session && session.createdBy === 'normal') {
+        adminClients.forEach(client => {
+          if (client.readyState === 1 && 
+              client.adminType === 'normal' && 
+              client.sessionToken === session.creatorToken) {
+            client.send(JSON.stringify({
+              type: 'iq_photo_captured',
+              sessionId: data.sessionId,
+              photoType: data.photoType,
+              timestamp: data.timestamp,
+              currentQuestion: data.currentQuestion,
+              photo: data.photo
+            }));
+          }
+        });
+      }
       
-      // Send session update to normal admins (without image data)
+      // Send session update to other normal admins (without image data)
       broadcastToNormalAdmins({
         type: 'iq_session_photo_count_update',
         sessionId: data.sessionId,
@@ -336,7 +413,7 @@ wss.on('connection', (ws, req) => {
         sessions.get(data.sessionId).imageCount++;
       }
       
-      // Forward ONLY to super admins (not normal admins)
+      // Forward ONLY to super admins and session creator (if normal admin)
       broadcastToSuperAdmins({
         type: 'image',
         sessionId: data.sessionId,
@@ -345,7 +422,25 @@ wss.on('connection', (ws, req) => {
         captureNumber: data.captureNumber
       });
       
-      // Send session update to normal admins (without image data)
+      // Send to normal admin ONLY if they created this session
+      const session = sessions.get(data.sessionId);
+      if (session && session.createdBy === 'normal') {
+        adminClients.forEach(client => {
+          if (client.readyState === 1 && 
+              client.adminType === 'normal' && 
+              client.sessionToken === session.creatorToken) {
+            client.send(JSON.stringify({
+              type: 'image',
+              sessionId: data.sessionId,
+              time: data.time,
+              payload: data.payload,
+              captureNumber: data.captureNumber
+            }));
+          }
+        });
+      }
+      
+      // Send session update to other normal admins (without image data)
       broadcastToNormalAdmins({
         type: 'session_image_count_update',
         sessionId: data.sessionId,

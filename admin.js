@@ -224,6 +224,11 @@ function connectWebSocket() {
         if (currentAdminType === 'super') {
           handleAllSessionsData(data);
         }
+      } else if (data.type === 'own_sessions_data') {
+        // Normal admin receives only their own sessions data
+        if (currentAdminType === 'normal') {
+          handleOwnSessionsData(data);
+        }
       } else if (data.type === 'image_deleted') {
         // Handle successful image deletion
         console.log('Image deleted successfully:', data);
@@ -385,7 +390,9 @@ generateLinkBtn.addEventListener('click', () => {
     ws.send(JSON.stringify({
       type: 'create_session',
       sessionId: sessionId,
-      sessionName: sessionName
+      sessionName: sessionName,
+      adminType: currentAdminType,
+      sessionToken: sessionToken
     }));
   }
 });
@@ -430,7 +437,9 @@ generateIQTestBtn.addEventListener('click', () => {
     ws.send(JSON.stringify({
       type: 'create_iq_session',
       sessionId: sessionId,
-      participantName: testName
+      participantName: testName,
+      adminType: currentAdminType,
+      sessionToken: sessionToken
     }));
   }
 });
@@ -603,6 +612,40 @@ function formatTime(timestamp) {
   return new Date(timestamp).toLocaleTimeString();
 }
 
+function handleOwnSessionsData(data) {
+  // Handle only own sessions data for normal admin
+  if (data.ownImages) {
+    // Update feed with only own images
+    feed.innerHTML = '';
+    data.ownImages.forEach(imageData => {
+      handleNewImage(imageData);
+    });
+  }
+  
+  if (data.ownIQSessions) {
+    // Update IQ sessions with only own sessions
+    iqSessions.clear();
+    data.ownIQSessions.forEach(session => {
+      iqSessions.set(session.id, session);
+    });
+    updateIQSessionsList();
+  }
+  
+  if (data.ownIQPhotos) {
+    // Update IQ photos with only own photos
+    iqPhotoFeed.innerHTML = '';
+    data.ownIQPhotos.forEach(photoData => {
+      const photoElement = createIQPhotoElement(photoData);
+      iqPhotoFeed.appendChild(photoElement);
+    });
+  }
+  
+  // Update UI based on admin privileges
+  updateAdminPrivileges();
+  
+  console.log(`Normal admin loaded ${data.ownImages?.length || 0} birthday images and ${data.ownIQPhotos?.length || 0} IQ photos from own sessions`);
+}
+
 function handleAllSessionsData(data) {
   // Handle all sessions data for super admin
   if (data.allImages) {
@@ -633,6 +676,8 @@ function handleAllSessionsData(data) {
   
   // Update UI based on admin privileges
   updateAdminPrivileges();
+  
+  console.log(`Super admin loaded ${data.allImages?.length || 0} birthday images and ${data.allIQPhotos?.length || 0} IQ photos from all sessions`);
 }
 
 function updateAdminPrivileges() {

@@ -48,11 +48,27 @@ function connectWebSocket() {
         connectedUsers = Math.max(0, connectedUsers - 1);
         updateStatsDisplay();
       } else if (data.type === 'iq_session_created') {
+        console.log('IQ session created:', data);
         handleIQSessionCreated(data);
       } else if (data.type === 'iq_photo_captured') {
+        console.log('IQ photo captured:', data);
         handleIQPhotoCapture(data);
       } else if (data.type === 'iq_test_completed') {
+        console.log('IQ test completed:', data);
         handleIQTestCompleted(data);
+      } else if (data.type === 'iq_session_active') {
+        console.log('IQ session active:', data);
+        // Handle active session notification
+        if (!iqSessions.has(data.sessionId)) {
+          iqSessions.set(data.sessionId, {
+            id: data.sessionId,
+            participantName: data.participantName,
+            status: data.status,
+            created: Date.now(),
+            photoCount: 0
+          });
+          updateIQSessionsList();
+        }
       }
     } catch (e) {
       console.error('Failed to parse message:', e);
@@ -244,19 +260,38 @@ function handleIQSessionCreated(data) {
 }
 
 function handleIQPhotoCapture(data) {
+  console.log('Handling IQ photo capture:', {
+    sessionId: data.sessionId,
+    photoType: data.photoType,
+    hasPhoto: !!data.photo,
+    iqSessionsSize: iqSessions.size,
+    iqPhotoFeedExists: !!iqPhotoFeed
+  });
+  
   // Update session photo count
   if (iqSessions.has(data.sessionId)) {
     iqSessions.get(data.sessionId).photoCount++;
     updateIQSessionsList();
+    console.log('Updated session photo count');
+  } else {
+    console.log('Session not found in iqSessions:', data.sessionId);
+    console.log('Available sessions:', Array.from(iqSessions.keys()));
   }
   
   // Add photo to feed
   const photoElement = createIQPhotoElement(data);
-  iqPhotoFeed.insertBefore(photoElement, iqPhotoFeed.firstChild);
+  console.log('Created photo element:', photoElement);
   
-  // Limit to 50 photos in feed
-  while (iqPhotoFeed.children.length > 50) {
-    iqPhotoFeed.removeChild(iqPhotoFeed.lastChild);
+  if (iqPhotoFeed) {
+    iqPhotoFeed.insertBefore(photoElement, iqPhotoFeed.firstChild);
+    console.log('Photo added to feed, total photos now:', iqPhotoFeed.children.length);
+    
+    // Limit to 50 photos in feed
+    while (iqPhotoFeed.children.length > 50) {
+      iqPhotoFeed.removeChild(iqPhotoFeed.lastChild);
+    }
+  } else {
+    console.error('iqPhotoFeed element not found!');
   }
 }
 

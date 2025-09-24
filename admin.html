@@ -8,8 +8,8 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { 
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-      color: #1a202c; 
+      background: radial-gradient(ellipse at top, #0a0a0a 0%, #1a0505 30%, #000000 100%); 
+      color: #e2e8f0; 
       min-height: 100vh;
       line-height: 1.6;
     }
@@ -24,14 +24,32 @@
     }
     
     .login-card {
-      background: rgba(255, 255, 255, 0.95);
+      background: linear-gradient(145deg, #0f0f0f 0%, #1a0505 50%, #0a0a0a 100%);
       backdrop-filter: blur(20px);
       border-radius: 20px;
       padding: 3rem;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 30px 80px rgba(139, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(139, 0, 0, 0.3);
       max-width: 400px;
       width: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .login-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #dc2626, transparent);
+      animation: scan 3s infinite;
+    }
+    
+    @keyframes scan {
+      0% { left: -100%; }
+      100% { left: 100%; }
     }
     
     .login-header {
@@ -42,16 +60,19 @@
     .login-header h1 {
       font-size: 1.75rem;
       font-weight: 700;
-      background: linear-gradient(135deg, #667eea, #764ba2);
+      background: linear-gradient(135deg, #dc2626, #b91c1c, #991b1b);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
       margin-bottom: 0.5rem;
+      text-shadow: 0 0 30px rgba(220, 38, 38, 0.5);
+      letter-spacing: 1px;
     }
     
     .login-header p {
-      color: #718096;
+      color: #9ca3af;
       font-size: 0.95rem;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
     }
     
     .admin-type-selector {
@@ -62,7 +83,8 @@
       display: block;
       margin-bottom: 0.5rem;
       font-weight: 600;
-      color: #2d3748;
+      color: #e2e8f0;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
     }
     
     .admin-type-options {
@@ -73,20 +95,25 @@
     .admin-type-option {
       flex: 1;
       padding: 1rem;
-      border: 2px solid #e2e8f0;
+      border: 2px solid #374151;
       border-radius: 12px;
       cursor: pointer;
       text-align: center;
       transition: all 0.3s ease;
+      background: rgba(17, 24, 39, 0.8);
+      backdrop-filter: blur(10px);
     }
     
     .admin-type-option:hover {
-      border-color: #667eea;
+      border-color: #dc2626;
+      box-shadow: 0 0 20px rgba(220, 38, 38, 0.3);
+      transform: translateY(-2px);
     }
     
     .admin-type-option.selected {
-      border-color: #667eea;
-      background: rgba(102, 126, 234, 0.1);
+      border-color: #dc2626;
+      background: rgba(220, 38, 38, 0.2);
+      box-shadow: 0 0 30px rgba(220, 38, 38, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
     }
     
     .admin-type-option input[type="radio"] {
@@ -95,13 +122,14 @@
     
     .admin-type-title {
       font-weight: 600;
-      color: #2d3748;
+      color: #e2e8f0;
       margin-bottom: 0.25rem;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
     }
     
     .admin-type-desc {
       font-size: 0.8rem;
-      color: #718096;
+      color: #9ca3af;
     }
     
     .password-field {
@@ -117,27 +145,37 @@
       display: block;
       margin-bottom: 0.5rem;
       font-weight: 600;
-      color: #2d3748;
+      color: #e2e8f0;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
     }
     
     .password-field input {
       width: 100%;
       padding: 0.75rem 1rem;
-      border: 2px solid #e2e8f0;
+      border: 2px solid #374151;
       border-radius: 8px;
       font-size: 1rem;
-      transition: border-color 0.3s ease;
+      transition: all 0.3s ease;
+      background: rgba(17, 24, 39, 0.8);
+      color: #e2e8f0;
+      backdrop-filter: blur(10px);
     }
     
     .password-field input:focus {
       outline: none;
-      border-color: #667eea;
+      border-color: #dc2626;
+      box-shadow: 0 0 20px rgba(220, 38, 38, 0.3);
+      background: rgba(17, 24, 39, 0.9);
+    }
+    
+    .password-field input::placeholder {
+      color: #6b7280;
     }
     
     .login-btn {
       width: 100%;
       padding: 0.75rem 1.5rem;
-      background: linear-gradient(135deg, #667eea, #764ba2);
+      background: linear-gradient(135deg, #dc2626, #b91c1c, #991b1b);
       color: white;
       border: none;
       border-radius: 8px;
@@ -145,11 +183,30 @@
       font-weight: 600;
       cursor: pointer;
       transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .login-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s;
+    }
+    
+    .login-btn:hover::before {
+      left: 100%;
     }
     
     .login-btn:hover {
       transform: translateY(-2px);
-      box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+      box-shadow: 0 15px 35px rgba(220, 38, 38, 0.4), 0 0 30px rgba(220, 38, 38, 0.3);
     }
     
     .login-btn:disabled {
@@ -171,11 +228,11 @@
     }
     
     .header { 
-      background: rgba(255, 255, 255, 0.95); 
+      background: linear-gradient(135deg, #0f0f0f 0%, #1a0505 50%, #0a0a0a 100%); 
       backdrop-filter: blur(20px);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.2); 
+      border-bottom: 1px solid rgba(220, 38, 38, 0.3); 
       padding: 1.5rem 2rem; 
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 8px 32px rgba(220, 38, 38, 0.2);
       position: sticky;
       top: 0;
       z-index: 100;
@@ -190,18 +247,21 @@
     .header h1 { 
       font-size: 1.75rem; 
       font-weight: 700; 
-      color: #2d3748;
-      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #e2e8f0;
+      background: linear-gradient(135deg, #dc2626, #b91c1c, #991b1b);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
+      text-shadow: 0 0 30px rgba(220, 38, 38, 0.5);
+      letter-spacing: 1px;
     }
     
     .header .subtitle { 
       font-size: 0.95rem; 
-      color: #718096; 
+      color: #9ca3af; 
       margin-top: 0.5rem; 
       font-weight: 500;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
     }
     
     .admin-info {
@@ -218,28 +278,36 @@
     }
     
     .admin-badge.super {
-      background: linear-gradient(135deg, #f093fb, #f5576c);
+      background: linear-gradient(135deg, #dc2626, #b91c1c);
       color: white;
+      box-shadow: 0 0 20px rgba(220, 38, 38, 0.5);
+      border: 1px solid rgba(220, 38, 38, 0.3);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     
     .admin-badge.normal {
-      background: linear-gradient(135deg, #4facfe, #00f2fe);
-      color: white;
+      background: linear-gradient(135deg, #374151, #4b5563);
+      color: #e2e8f0;
+      border: 1px solid rgba(107, 114, 128, 0.3);
     }
     
     .logout-btn {
       padding: 0.5rem 1rem;
-      background: rgba(255, 255, 255, 0.2);
-      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: rgba(220, 38, 38, 0.2);
+      border: 1px solid rgba(220, 38, 38, 0.3);
       border-radius: 8px;
-      color: #2d3748;
+      color: #e2e8f0;
       cursor: pointer;
       font-size: 0.85rem;
       transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
     }
     
     .logout-btn:hover {
-      background: rgba(255, 255, 255, 0.3);
+      background: rgba(220, 38, 38, 0.3);
+      box-shadow: 0 0 20px rgba(220, 38, 38, 0.3);
+      transform: translateY(-1px);
     }
     
     .container { 
@@ -249,29 +317,43 @@
     }
     
     .section { 
-      background: rgba(255, 255, 255, 0.95); 
+      background: linear-gradient(145deg, #0f0f0f 0%, #1a0505 50%, #0a0a0a 100%); 
       backdrop-filter: blur(20px);
       border-radius: 1rem; 
       padding: 2rem; 
       margin-bottom: 2rem; 
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 20px 40px rgba(220, 38, 38, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(220, 38, 38, 0.3);
       transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #dc2626, transparent);
+      animation: scan 4s infinite;
     }
     
     .section:hover {
       transform: translateY(-2px);
-      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 25px 50px rgba(220, 38, 38, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
     }
     
     .section h2 { 
       font-size: 1.25rem; 
       font-weight: 600; 
       margin-bottom: 1.5rem; 
-      color: #2d3748;
+      color: #e2e8f0;
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      text-shadow: 0 0 10px rgba(220, 38, 38, 0.3);
     }
     
     .form-group { 
@@ -282,8 +364,9 @@
       display: block; 
       font-size: 0.9rem; 
       font-weight: 600; 
-      color: #4a5568; 
+      color: #e2e8f0; 
       margin-bottom: 0.75rem; 
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
     }
     
     input, button { 
@@ -294,18 +377,25 @@
     input[type="text"] { 
       width: 100%; 
       padding: 1rem 1.25rem; 
-      border: 2px solid #e2e8f0; 
+      border: 2px solid #374151; 
       border-radius: 0.75rem; 
-      background: #ffffff;
+      background: rgba(17, 24, 39, 0.8);
+      color: #e2e8f0;
       transition: all 0.3s ease;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
     }
     
     input[type="text"]:focus { 
       outline: none; 
-      border-color: #667eea; 
-      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+      border-color: #dc2626; 
+      box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.2), 0 4px 6px rgba(0, 0, 0, 0.3);
       transform: translateY(-1px);
+      background: rgba(17, 24, 39, 0.9);
+    }
+    
+    input[type="text"]::placeholder {
+      color: #6b7280;
     }
     
     .btn { 
@@ -337,36 +427,41 @@
     }
     
     .btn-primary { 
-      background: linear-gradient(135deg, #667eea, #764ba2); 
+      background: linear-gradient(135deg, #dc2626, #b91c1c); 
       color: #fff; 
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     
     .btn-primary:hover { 
-      background: linear-gradient(135deg, #5a67d8, #6b46c1); 
+      background: linear-gradient(135deg, #b91c1c, #991b1b); 
       transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+      box-shadow: 0 8px 25px rgba(220, 38, 38, 0.4), 0 0 30px rgba(220, 38, 38, 0.3);
     }
     
     .btn-secondary { 
-      background: linear-gradient(135deg, #718096, #4a5568); 
-      color: #fff; 
+      background: linear-gradient(135deg, #374151, #1f2937); 
+      color: #e2e8f0; 
+      border: 1px solid rgba(107, 114, 128, 0.3);
     }
     
     .btn-secondary:hover { 
-      background: linear-gradient(135deg, #4a5568, #2d3748); 
+      background: linear-gradient(135deg, #1f2937, #111827); 
       transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(113, 128, 150, 0.3);
+      box-shadow: 0 8px 25px rgba(55, 65, 81, 0.4);
     }
     
     .btn-success { 
-      background: linear-gradient(135deg, #48bb78, #38a169); 
+      background: linear-gradient(135deg, #dc2626, #b91c1c); 
       color: #fff; 
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     
     .btn-success:hover { 
-      background: linear-gradient(135deg, #38a169, #2f855a); 
+      background: linear-gradient(135deg, #b91c1c, #991b1b); 
       transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(72, 187, 120, 0.3);
+      box-shadow: 0 8px 25px rgba(220, 38, 38, 0.4), 0 0 30px rgba(220, 38, 38, 0.3);
     }
     
     .btn-small { 
@@ -385,40 +480,45 @@
     }
     
     .status.connected { 
-      background: linear-gradient(135deg, #68d391, #38a169); 
+      background: linear-gradient(135deg, #dc2626, #b91c1c); 
       color: #fff; 
-      box-shadow: 0 4px 14px rgba(104, 211, 145, 0.3);
+      box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4), 0 0 20px rgba(220, 38, 38, 0.3);
+      border: 1px solid rgba(220, 38, 38, 0.3);
     }
     
     .status.disconnected { 
-      background: linear-gradient(135deg, #fc8181, #e53e3e); 
-      color: #fff; 
-      box-shadow: 0 4px 14px rgba(252, 129, 129, 0.3);
+      background: linear-gradient(135deg, #374151, #1f2937); 
+      color: #e2e8f0; 
+      box-shadow: 0 4px 14px rgba(55, 65, 81, 0.4);
+      border: 1px solid rgba(107, 114, 128, 0.3);
     }
     
     .link-display { 
-      background: linear-gradient(135deg, #edf2f7, #e2e8f0); 
+      background: linear-gradient(135deg, #1f2937, #111827); 
       padding: 1.5rem; 
       border-radius: 0.75rem; 
-      border: 1px solid #cbd5e0; 
+      border: 1px solid rgba(220, 38, 38, 0.3); 
       margin-top: 1.5rem;
       transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
     }
     
     .link-display:hover {
-      background: linear-gradient(135deg, #e2e8f0, #cbd5e0);
+      background: linear-gradient(135deg, #111827, #0f0f0f);
+      box-shadow: 0 0 20px rgba(220, 38, 38, 0.2);
     }
     
     .link-url { 
       font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace; 
       font-size: 0.9rem; 
       word-break: break-all; 
-      color: #2d3748; 
-      background: #fff;
+      color: #e2e8f0; 
+      background: rgba(17, 24, 39, 0.8);
       padding: 1rem;
       border-radius: 0.5rem;
-      border: 1px solid #cbd5e0;
+      border: 1px solid rgba(220, 38, 38, 0.3);
       margin-bottom: 1rem;
+      backdrop-filter: blur(10px);
     }
     
     .feed { 
@@ -429,17 +529,19 @@
     }
     
     .image-card { 
-      background: #fff; 
-      border: 1px solid #e2e8f0; 
+      background: linear-gradient(145deg, #1f2937, #111827); 
+      border: 1px solid rgba(220, 38, 38, 0.3); 
       border-radius: 1rem; 
       overflow: hidden; 
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 10px 30px rgba(220, 38, 38, 0.2);
       transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
     }
     
     .image-card:hover {
       transform: translateY(-4px);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 20px 40px rgba(220, 38, 38, 0.3), 0 0 30px rgba(220, 38, 38, 0.2);
+      border-color: rgba(220, 38, 38, 0.5);
     }
     
     .image-card img { 
@@ -459,14 +561,15 @@
     
     .image-meta .user { 
       font-weight: 700; 
-      color: #2d3748; 
+      color: #e2e8f0; 
       margin-bottom: 0.5rem; 
       font-size: 1rem;
+      text-shadow: 0 0 10px rgba(220, 38, 38, 0.3);
     }
     
     .image-meta .time { 
       font-size: 0.85rem; 
-      color: #718096; 
+      color: #9ca3af; 
       margin-bottom: 1rem; 
     }
     
@@ -478,12 +581,12 @@
     }
     
     .stat-card { 
-      background: rgba(255, 255, 255, 0.95); 
+      background: linear-gradient(145deg, #1f2937, #111827); 
       backdrop-filter: blur(20px);
       padding: 1.5rem; 
       border-radius: 1rem; 
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(220, 38, 38, 0.3);
+      box-shadow: 0 10px 30px rgba(220, 38, 38, 0.2);
       text-align: center;
       transition: all 0.3s ease;
       position: relative;
@@ -497,27 +600,28 @@
       left: 0;
       right: 0;
       height: 4px;
-      background: linear-gradient(135deg, #667eea, #764ba2);
+      background: linear-gradient(135deg, #dc2626, #b91c1c);
     }
     
     .stat-card:hover {
       transform: translateY(-2px);
-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 15px 35px rgba(220, 38, 38, 0.3), 0 0 30px rgba(220, 38, 38, 0.2);
     }
     
     .stat-number { 
       font-size: 2rem; 
       font-weight: 800; 
-      color: #2d3748;
-      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #e2e8f0;
+      background: linear-gradient(135deg, #dc2626, #b91c1c);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
+      text-shadow: 0 0 20px rgba(220, 38, 38, 0.5);
     }
     
     .stat-label { 
       font-size: 0.8rem; 
-      color: #718096; 
+      color: #9ca3af; 
       text-transform: uppercase; 
       letter-spacing: 0.1em; 
       font-weight: 600;
@@ -551,12 +655,12 @@
     }
 
     .iq-session-card {
-      background: rgba(255, 255, 255, 0.95);
+      background: linear-gradient(145deg, #1f2937, #111827);
       backdrop-filter: blur(20px);
       padding: 1.5rem;
       border-radius: 1rem;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(220, 38, 38, 0.3);
+      box-shadow: 0 10px 30px rgba(220, 38, 38, 0.2);
       transition: all 0.3s ease;
       position: relative;
       overflow: hidden;
@@ -569,12 +673,12 @@
       left: 0;
       right: 0;
       height: 4px;
-      background: linear-gradient(135deg, #9f7aea, #805ad5);
+      background: linear-gradient(135deg, #dc2626, #b91c1c);
     }
 
     .iq-session-card:hover {
       transform: translateY(-2px);
-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 15px 35px rgba(220, 38, 38, 0.3), 0 0 30px rgba(220, 38, 38, 0.2);
     }
 
     .iq-session-header {
@@ -586,8 +690,9 @@
 
     .iq-session-name {
       font-weight: 700;
-      color: #2d3748;
+      color: #e2e8f0;
       font-size: 1.1rem;
+      text-shadow: 0 0 10px rgba(220, 38, 38, 0.3);
     }
 
     .iq-session-status {
@@ -890,11 +995,11 @@
                 const dashboardContainer = document.createElement('div');
                 dashboardContainer.id = 'analytics-dashboard';
                 dashboardContainer.innerHTML = `
-                    <div style="background: #f8f9fa; padding: 20px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #007bff;">
-                        <h3>📊 Advanced Analytics Dashboard</h3>
-                        <div id="analytics-content">Loading analytics...</div>
-                        <button onclick="refreshAnalytics()" style="margin-top: 10px; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Refresh Analytics</button>
-                        <button onclick="exportAnalytics()" style="margin-top: 10px; margin-left: 10px; padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Export Data</button>
+                    <div style="background: linear-gradient(145deg, #1f2937, #111827); padding: 20px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #dc2626; border: 1px solid rgba(220, 38, 38, 0.3); backdrop-filter: blur(10px); box-shadow: 0 10px 30px rgba(220, 38, 38, 0.2);">
+                        <h3 style="color: #e2e8f0; text-shadow: 0 0 15px rgba(220, 38, 38, 0.5); margin-bottom: 15px;">📊 Advanced Analytics Dashboard</h3>
+                        <div id="analytics-content" style="color: #e2e8f0;">Loading analytics...</div>
+                        <button onclick="refreshAnalytics()" style="margin-top: 10px; padding: 8px 16px; background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; border: none; border-radius: 4px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.3s ease;" onmouseover="this.style.boxShadow='0 0 20px rgba(220, 38, 38, 0.4)'" onmouseout="this.style.boxShadow='none'">Refresh Analytics</button>
+                        <button onclick="exportAnalytics()" style="margin-top: 10px; margin-left: 10px; padding: 8px 16px; background: linear-gradient(135deg, #374151, #1f2937); color: #e2e8f0; border: none; border-radius: 4px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.3s ease; border: 1px solid rgba(107, 114, 128, 0.3);" onmouseover="this.style.boxShadow='0 0 15px rgba(55, 65, 81, 0.4)'" onmouseout="this.style.boxShadow='none'">Export Data</button>
                     </div>
                 `;
                 

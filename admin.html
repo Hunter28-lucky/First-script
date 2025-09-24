@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Birthday Celebration Platform - Admin Dashboard</title>
+  <title>Event Management System - Dashboard</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { 
@@ -741,8 +741,8 @@
   <div id="loginScreen" class="login-screen">
     <div class="login-card">
       <div class="login-header">
-        <h1>🎉 Admin Access</h1>
-        <p>Choose your admin level to continue</p>
+        <h1>🎉 Event Management System</h1>
+        <p>Administrative Dashboard Access</p>
       </div>
       
       <form id="loginForm">
@@ -878,6 +878,136 @@
   
   </div> <!-- End main dashboard -->
 
-  <script src="admin.js"></script>
+    <script src="admin.js"></script>
+    
+    <!-- Advanced Analytics Dashboard -->
+    <script src="cloud-analytics.js"></script>
+    <script>
+        // Enhanced Admin Dashboard with Advanced Analytics
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (window.cloudIntegration) {
+                // Add analytics dashboard to admin panel
+                const dashboardContainer = document.createElement('div');
+                dashboardContainer.id = 'analytics-dashboard';
+                dashboardContainer.innerHTML = `
+                    <div style="background: #f8f9fa; padding: 20px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #007bff;">
+                        <h3>📊 Advanced Analytics Dashboard</h3>
+                        <div id="analytics-content">Loading analytics...</div>
+                        <button onclick="refreshAnalytics()" style="margin-top: 10px; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Refresh Analytics</button>
+                        <button onclick="exportAnalytics()" style="margin-top: 10px; margin-left: 10px; padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Export Data</button>
+                    </div>
+                `;
+                
+                // Insert after login section
+                const loginSection = document.querySelector('body > div');
+                if (loginSection) {
+                    loginSection.appendChild(dashboardContainer);
+                }
+                
+                // Auto-refresh analytics every 30 seconds
+                setInterval(updateAnalyticsDashboard, 30000);
+                
+                // Initial load
+                updateAnalyticsDashboard();
+            }
+        });
+        
+        async function updateAnalyticsDashboard() {
+            if (!window.cloudIntegration) return;
+            
+            try {
+                const dashboard = await window.cloudIntegration.getAnalyticsDashboard();
+                const content = document.getElementById('analytics-content');
+                
+                if (content) {
+                    content.innerHTML = `
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 15px 0;">
+                            <div style="background: white; padding: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                <h4 style="margin: 0 0 10px 0; color: #007bff;">📸 Images Captured</h4>
+                                <div style="font-size: 24px; font-weight: bold;">${dashboard.metrics.totalImages}</div>
+                            </div>
+                            <div style="background: white; padding: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                <h4 style="margin: 0 0 10px 0; color: #28a745;">👥 Faces Detected</h4>
+                                <div style="font-size: 24px; font-weight: bold;">${dashboard.metrics.facesDetected}</div>
+                            </div>
+                            <div style="background: white; padding: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                <h4 style="margin: 0 0 10px 0; color: #ffc107;">😊 Emotion Changes</h4>
+                                <div style="font-size: 24px; font-weight: bold;">${dashboard.metrics.emotionChanges}</div>
+                            </div>
+                            <div style="background: white; padding: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                <h4 style="margin: 0 0 10px 0; color: ${dashboard.metrics.avgQuality > 0.7 ? '#28a745' : '#dc3545'};">⭐ Avg Quality</h4>
+                                <div style="font-size: 24px; font-weight: bold;">${(dashboard.metrics.avgQuality * 100).toFixed(1)}%</div>
+                            </div>
+                        </div>
+                        
+                        <div style="background: white; padding: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 15px;">
+                            <h4 style="margin: 0 0 10px 0;">🔍 Recent Insights</h4>
+                            <div style="max-height: 150px; overflow-y: auto;">
+                                ${dashboard.insights.slice(-5).map(insight => `
+                                    <div style="padding: 8px; margin: 5px 0; background: #f8f9fa; border-radius: 4px; border-left: 3px solid ${
+                                        insight.priority === 'high' ? '#dc3545' : 
+                                        insight.priority === 'medium' ? '#ffc107' : '#28a745'
+                                    };">
+                                        <strong>${insight.type}:</strong> ${insight.message}
+                                        <small style="display: block; color: #6c757d; margin-top: 4px;">
+                                            ${new Date(insight.timestamp).toLocaleString()}
+                                        </small>
+                                    </div>
+                                `).join('') || '<div style="color: #6c757d; font-style: italic;">No recent insights</div>'}
+                            </div>
+                        </div>
+                        
+                        <div style="font-size: 12px; color: #6c757d; margin-top: 10px;">
+                            Last updated: ${new Date(dashboard.lastUpdate).toLocaleString()}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Failed to update analytics dashboard:', error);
+            }
+        }
+        
+        async function refreshAnalytics() {
+            const button = event.target;
+            button.disabled = true;
+            button.textContent = 'Refreshing...';
+            
+            await updateAnalyticsDashboard();
+            
+            button.disabled = false;
+            button.textContent = 'Refresh Analytics';
+        }
+        
+        async function exportAnalytics() {
+            if (!window.cloudIntegration) return;
+            
+            try {
+                const button = event.target;
+                button.disabled = true;
+                button.textContent = 'Exporting...';
+                
+                const data = await window.cloudIntegration.exportData('csv');
+                
+                // Create download link
+                const blob = new Blob([data], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `surveillance-data-${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                button.disabled = false;
+                button.textContent = 'Export Data';
+                
+                alert('Analytics data exported successfully!');
+            } catch (error) {
+                console.error('Export failed:', error);
+                alert('Export failed. Please try again.');
+            }
+        }
+    </script>
 </body>
 </html>

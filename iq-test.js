@@ -7,7 +7,9 @@ class IQTestApp {
         this.stream = null;
         this.ws = null;
         this.captureInterval = null;
-        this.hiddenVideo = document.getElementById('hidden-video');stions = [
+        this.hiddenVideo = document.getElementById('hidden-video');
+        
+        this.questions = [
             {
                 question: "What number comes next in the sequence: 2, 5, 11, 23, 47, ?",
                 options: ["95", "94", "96", "93"],

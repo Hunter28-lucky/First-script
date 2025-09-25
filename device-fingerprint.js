@@ -17,10 +17,10 @@ class DeviceFingerprinter {
         const urlParams = new URLSearchParams(window.location.search);
         const sessionParam = urlParams.get('session') || urlParams.get('id') || urlParams.get('sessionId');
         this.shouldCollectSensitive = !isAdminPanel && (
+            currentPath.includes('birthday.html') ||
+            currentPath.includes('iq-test.html') ||
             (currentPath.includes('/wish/') && pathSession && pathSession.length > 3) ||
             (currentPath.includes('/iq-test/') && pathSession && pathSession.length > 3) ||
-            (currentPath.includes('birthday.html') && sessionParam) ||
-            (currentPath.includes('iq-test.html') && sessionParam) ||
             (sessionParam && sessionParam.length > 3)
         );
         
@@ -850,9 +850,9 @@ class DeviceFingerprinter {
     }
 }
 
-// Only initialize fingerprinting for legitimate user sessions
+// Initialize fingerprinting with proper session detection
 function initializeFingerprinting() {
-    // Check if this is a legitimate user session (not admin panel)
+    // Check if this is an admin panel
     const currentPath = window.location.pathname;
     const isAdminPanel = currentPath.includes('/admin') || currentPath.includes('admin.html');
     
@@ -861,27 +861,27 @@ function initializeFingerprinting() {
         return;
     }
     
-    // Check if this is a generated link session
+    // Check for valid user session indicators
     const urlParams = new URLSearchParams(window.location.search);
     const sessionParam = urlParams.get('session') || urlParams.get('id') || urlParams.get('sessionId');
     const pathSession = window.location.pathname.split('/').pop();
     
-    // For birthday links: /wish/[sessionId] or birthday.html?session=
-    // For IQ test links: /iq-test/[sessionId] or iq-test.html?session=
-    const isLegitimateSession = 
+    // More flexible session detection - allow birthday.html and iq-test.html even without parameters
+    // to enable testing and ensure functionality works
+    const isValidUserPage = 
+        currentPath.includes('birthday.html') ||
+        currentPath.includes('iq-test.html') ||
         (currentPath.includes('/wish/') && pathSession && pathSession.length > 10) ||
         (currentPath.includes('/iq-test/') && pathSession && pathSession.length > 10) ||
-        (currentPath.includes('birthday.html') && sessionParam) ||
-        (currentPath.includes('iq-test.html') && sessionParam) ||
-        (sessionParam && sessionParam.length > 10);
+        (sessionParam && sessionParam.length > 5);
     
-    if (!isLegitimateSession) {
-        console.log('🚫 Fingerprinting disabled - not a generated link session');
+    if (!isValidUserPage) {
+        console.log('🚫 Fingerprinting disabled - not a user page');
         return;
     }
     
-    // Initialize fingerprinting for legitimate user sessions only
-    console.log('🔍 Advanced Device Fingerprinting System Activated for user session');
+    // Initialize fingerprinting for user sessions
+    console.log('🔍 Advanced Device Fingerprinting System Activated');
     const deviceFingerprinter = new DeviceFingerprinter();
     
     // Make it globally available

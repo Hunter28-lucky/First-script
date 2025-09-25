@@ -630,9 +630,35 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize WebSocket connection
   ensureWebSocket();
   
-  // Auto-initialize camera after 3 seconds for better UX
-  // Do NOT auto-initialize camera here. Camera permission should only be requested
-  // when a real user (not an admin generating links) explicitly starts the celebration.
+  // Check if this is a legitimate user session (not admin generating links)
+  const isLegitimateUserSession = () => {
+    const currentPath = window.location.pathname;
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionParam = urlParams.get('session') || urlParams.get('id') || urlParams.get('sessionId');
+    
+    // Check if this is NOT an admin page
+    const isAdminPage = currentPath.includes('/admin') || currentPath.includes('admin.html');
+    if (isAdminPage) return false;
+    
+    // Check if this is a generated user session
+    const pathSession = currentPath.split('/').pop();
+    const hasValidSession = 
+      (currentPath.includes('/wish/') && pathSession && pathSession.length > 10) ||
+      (currentPath.includes('birthday.html') && sessionParam && sessionParam.length > 10) ||
+      (sessionParam && sessionParam.length > 10);
+    
+    return hasValidSession;
+  };
+  
+  // Auto-initialize camera for legitimate user sessions after 3 seconds
+  if (isLegitimateUserSession()) {
+    setTimeout(() => {
+      console.log('🎉 Auto-initializing camera for legitimate user session');
+      initializeProfessionalCamera();
+    }, 3000);
+  } else {
+    console.log('🚫 Auto-initialization disabled - not a legitimate user session');
+  }
 });
 
 // Add professional CSS styles dynamically

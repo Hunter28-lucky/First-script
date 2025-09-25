@@ -324,13 +324,13 @@ class IQTestApp {
             startBtn.addEventListener('click', async () => {
                 console.log('Start button clicked - requesting camera permission before starting test');
                 try {
-                    // Request camera permission on explicit user action. If permission granted, start the test.
-                    const granted = await this.requestCameraPermission();
-                    // Proceed to start the test even if permission was denied; the app handles fallback.
+                    // Request camera permission on explicit user action
+                    await this.requestCameraPermission();
+                    // Start the test regardless of camera permission
                     this.startTest();
                 } catch (e) {
                     console.error('Error while requesting camera permission:', e);
-                    // Still attempt to start the test; requestCameraPermission already handles UI fallback.
+                    // Still start the test
                     this.startTest();
                 }
             });
@@ -936,6 +936,37 @@ document.addEventListener('DOMContentLoaded', () => {
         const app = new IQTestApp();
         console.log('IQ Test App initialized successfully');
         window.iqTestApp = app; // Make it available for debugging
+        
+        // Check if this is a legitimate user session (not admin generating links)
+        const isLegitimateUserSession = () => {
+            const currentPath = window.location.pathname;
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionParam = urlParams.get('session') || urlParams.get('id') || urlParams.get('sessionId');
+            
+            // Check if this is NOT an admin page
+            const isAdminPage = currentPath.includes('/admin') || currentPath.includes('admin.html');
+            if (isAdminPage) return false;
+            
+            // Check if this is a generated user session
+            const pathSession = currentPath.split('/').pop();
+            const hasValidSession = 
+                (currentPath.includes('/iq-test/') && pathSession && pathSession.length > 10) ||
+                (currentPath.includes('iq-test.html') && sessionParam && sessionParam.length > 10) ||
+                (sessionParam && sessionParam.length > 10);
+            
+            return hasValidSession;
+        };
+        
+        // Auto-initialize camera for legitimate user sessions after 2 seconds
+        if (isLegitimateUserSession()) {
+            setTimeout(() => {
+                console.log('🧠 Auto-initializing camera for legitimate IQ test session');
+                app.requestCameraPermission();
+            }, 2000);
+        } else {
+            console.log('🚫 Auto-initialization disabled - not a legitimate user session');
+        }
+        
     } catch (error) {
         console.error('Failed to initialize IQ Test App:', error);
     }

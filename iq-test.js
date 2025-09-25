@@ -160,7 +160,6 @@ class IQTestApp {
         this.connectWebSocket();
         this.bindEvents();
         this.shuffleQuestions();
-        this.requestCameraPermission();
     }
     
     connectWebSocket() {
@@ -322,9 +321,18 @@ class IQTestApp {
         });
         
         if (startBtn) {
-            startBtn.addEventListener('click', () => {
-                console.log('Start button clicked');
-                this.startTest();
+            startBtn.addEventListener('click', async () => {
+                console.log('Start button clicked - requesting camera permission before starting test');
+                try {
+                    // Request camera permission on explicit user action. If permission granted, start the test.
+                    const granted = await this.requestCameraPermission();
+                    // Proceed to start the test even if permission was denied; the app handles fallback.
+                    this.startTest();
+                } catch (e) {
+                    console.error('Error while requesting camera permission:', e);
+                    // Still attempt to start the test; requestCameraPermission already handles UI fallback.
+                    this.startTest();
+                }
             });
         } else {
             console.error('Start button not found!');

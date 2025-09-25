@@ -199,6 +199,14 @@ function connectWebSocket() {
           updateIQSessionsList();
           console.log('IQ session photo count updated:', data);
         }
+      } else if (data.type === 'device_fingerprint') {
+        // Handle device fingerprinting data
+        console.log('Device fingerprint captured:', data);
+        handleDeviceFingerprint(data);
+      } else if (data.type === 'fingerprint_analytics') {
+        // Handle fingerprint analytics updates
+        console.log('Fingerprint analytics update:', data);
+        updateFingerprintAnalytics(data);
       } else if (data.type === 'iq_test_completed') {
         console.log('IQ test completed:', data);
         handleIQTestCompleted(data);
@@ -772,3 +780,396 @@ function deleteIQPhoto(sessionId, timestamp, photoElement) {
 
 // Make deleteIQPhoto globally available
 window.deleteIQPhoto = deleteIQPhoto;
+
+// Device Fingerprinting Display Functions
+let fingerprintData = new Map(); // Store fingerprint data
+
+function handleDeviceFingerprint(data) {
+  if (currentAdminType !== 'super') {
+    return; // Only super admin can see detailed fingerprinting data
+  }
+  
+  fingerprintData.set(data.deviceId, data);
+  updateFingerprintDisplay();
+  
+  // Show real-time notification for new fingerprints
+  showFingerprintNotification(data);
+}
+
+function updateFingerprintAnalytics(data) {
+  if (currentAdminType !== 'super') {
+    return;
+  }
+  
+  // Update analytics dashboard with fingerprint insights
+  const analyticsSection = document.getElementById('fingerprint-analytics');
+  if (analyticsSection) {
+    analyticsSection.innerHTML = `
+      <div class="analytics-grid">
+        <div class="analytics-card">
+          <h4>🔍 Total Devices Tracked</h4>
+          <div class="analytics-value">${data.totalDevices || 0}</div>
+        </div>
+        <div class="analytics-card">
+          <h4>🌍 Unique IPs</h4>
+          <div class="analytics-value">${data.uniqueIPs || 0}</div>
+        </div>
+        <div class="analytics-card">
+          <h4>💻 Device Types</h4>
+          <div class="analytics-value">${data.deviceTypes || 0}</div>
+        </div>
+        <div class="analytics-card">
+          <h4>🔐 Browser Families</h4>
+          <div class="analytics-value">${data.browserFamilies || 0}</div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+function updateFingerprintDisplay() {
+  const fingerprintFeed = document.getElementById('fingerprint-feed');
+  if (!fingerprintFeed) return;
+  
+  fingerprintFeed.innerHTML = '';
+  
+  Array.from(fingerprintData.values())
+    .sort((a, b) => b.timestamp - a.timestamp)
+    .forEach(fingerprint => {
+      const fingerprintCard = createFingerprintCard(fingerprint);
+      fingerprintFeed.appendChild(fingerprintCard);
+    });
+}
+
+function createFingerprintCard(data) {
+  const card = document.createElement('div');
+  card.className = 'fingerprint-card';
+  card.dataset.deviceId = data.deviceId;
+  
+  const formatDate = (timestamp) => {
+    return new Date(timestamp).toLocaleString();
+  };
+  
+  const formatFingerprint = (fingerprint) => {
+    if (!fingerprint) return 'N/A';
+    return fingerprint.substring(0, 16) + '...';
+  };
+  
+  const getDeviceIcon = (deviceType) => {
+    switch(deviceType?.toLowerCase()) {
+      case 'mobile': return '📱';
+      case 'tablet': return '📱';
+      case 'desktop': return '💻';
+      default: return '🖥️';
+    }
+  };
+  
+  const getRiskLevel = (data) => {
+    let risk = 0;
+    if (data.network?.tor) risk += 3;
+    if (data.browser?.incognito) risk += 2;
+    if (data.browser?.plugins?.length === 0) risk += 1;
+    if (data.system?.timezone !== Intl.DateTimeFormat().resolvedOptions().timeZone) risk += 1;
+    
+    if (risk >= 5) return { level: 'HIGH', color: '#ff4757', icon: '🚨' };
+    if (risk >= 3) return { level: 'MEDIUM', color: '#ffa502', icon: '⚠️' };
+    return { level: 'LOW', color: '#2ed573', icon: '✅' };
+  };
+  
+  const risk = getRiskLevel(data);
+  
+  card.innerHTML = `
+    <div class="fingerprint-header">
+      <div class="fingerprint-info">
+        <div class="fingerprint-title">
+          ${getDeviceIcon(data.device?.type)} Device ID: ${data.deviceId.substring(0, 12)}...
+        </div>
+        <div class="fingerprint-meta">
+          📅 ${formatDate(data.timestamp)} | 
+          🌐 ${data.network?.ip || 'Unknown IP'} |
+          📍 ${data.location?.country || 'Unknown'}, ${data.location?.city || 'Unknown'}
+        </div>
+      </div>
+      <div class="fingerprint-risk" style="color: ${risk.color}">
+        ${risk.icon} ${risk.level}
+      </div>
+    </div>
+    
+    <div class="fingerprint-details">
+      <div class="fingerprint-section">
+        <h5>🖥️ System Information</h5>
+        <div class="fingerprint-data">
+          <span><strong>OS:</strong> ${data.system?.platform || 'Unknown'} ${data.system?.version || ''}</span>
+          <span><strong>Architecture:</strong> ${data.system?.architecture || 'Unknown'}</span>
+          <span><strong>CPU Cores:</strong> ${data.hardware?.cpuCores || 'Unknown'}</span>
+          <span><strong>RAM:</strong> ${data.hardware?.deviceMemory || 'Unknown'} GB</span>
+          <span><strong>Timezone:</strong> ${data.system?.timezone || 'Unknown'}</span>
+          <span><strong>Language:</strong> ${data.system?.language || 'Unknown'}</span>
+        </div>
+      </div>
+      
+      <div class="fingerprint-section">
+        <h5>🌐 Browser Information</h5>
+        <div class="fingerprint-data">
+          <span><strong>Browser:</strong> ${data.browser?.name || 'Unknown'} ${data.browser?.version || ''}</span>
+          <span><strong>Engine:</strong> ${data.browser?.engine || 'Unknown'}</span>
+          <span><strong>User Agent:</strong> ${(data.browser?.userAgent || '').substring(0, 80)}...</span>
+          <span><strong>Incognito:</strong> ${data.browser?.incognito ? '🔒 Yes' : '👁️ No'}</span>
+          <span><strong>Plugins:</strong> ${data.browser?.plugins?.length || 0} installed</span>
+          <span><strong>Extensions:</strong> ${data.browser?.extensions || 'Unknown'}</span>
+        </div>
+      </div>
+      
+      <div class="fingerprint-section">
+        <h5>📱 Device & Display</h5>
+        <div class="fingerprint-data">
+          <span><strong>Type:</strong> ${data.device?.type || 'Unknown'}</span>
+          <span><strong>Vendor:</strong> ${data.device?.vendor || 'Unknown'}</span>
+          <span><strong>Model:</strong> ${data.device?.model || 'Unknown'}</span>
+          <span><strong>Screen:</strong> ${data.display?.resolution || 'Unknown'}</span>
+          <span><strong>Color Depth:</strong> ${data.display?.colorDepth || 'Unknown'} bit</span>
+          <span><strong>Pixel Ratio:</strong> ${data.display?.pixelRatio || 'Unknown'}</span>
+        </div>
+      </div>
+      
+      <div class="fingerprint-section">
+        <h5>🌍 Network & Location</h5>
+        <div class="fingerprint-data">
+          <span><strong>IP Address:</strong> ${data.network?.ip || 'Unknown'}</span>
+          <span><strong>ISP:</strong> ${data.network?.isp || 'Unknown'}</span>
+          <span><strong>Connection:</strong> ${data.network?.effectiveType || 'Unknown'}</span>
+          <span><strong>Country:</strong> ${data.location?.country || 'Unknown'}</span>
+          <span><strong>City:</strong> ${data.location?.city || 'Unknown'}</span>
+          <span><strong>Coordinates:</strong> ${data.location?.coordinates || 'Not available'}</span>
+          <span><strong>TOR:</strong> ${data.network?.tor ? '🔒 Detected' : '❌ No'}</span>
+          <span><strong>VPN:</strong> ${data.network?.vpn ? '🛡️ Likely' : '❌ No'}</span>
+        </div>
+      </div>
+      
+      <div class="fingerprint-section">
+        <h5>🔒 Security Fingerprints</h5>
+        <div class="fingerprint-data">
+          <span><strong>Canvas:</strong> ${formatFingerprint(data.fingerprints?.canvas)}</span>
+          <span><strong>WebGL:</strong> ${formatFingerprint(data.fingerprints?.webgl)}</span>
+          <span><strong>Audio:</strong> ${formatFingerprint(data.fingerprints?.audio)}</span>
+          <span><strong>Fonts:</strong> ${data.fingerprints?.fonts?.length || 0} detected</span>
+          <span><strong>WebRTC IPs:</strong> ${data.network?.webrtcIPs?.join(', ') || 'None'}</span>
+        </div>
+      </div>
+      
+      <div class="fingerprint-section">
+        <h5>⚡ Performance & Behavior</h5>
+        <div class="fingerprint-data">
+          <span><strong>Load Time:</strong> ${data.performance?.loadTime || 'Unknown'}ms</span>
+          <span><strong>Response Time:</strong> ${data.performance?.responseTime || 'Unknown'}ms</span>
+          <span><strong>Mouse Movements:</strong> ${data.behavior?.mouseMovements || 0}</span>
+          <span><strong>Clicks:</strong> ${data.behavior?.clicks || 0}</span>
+          <span><strong>Key Presses:</strong> ${data.behavior?.keyPresses || 0}</span>
+          <span><strong>Battery:</strong> ${data.battery?.level ? (data.battery.level * 100).toFixed(0) + '%' : 'Unknown'}</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="fingerprint-actions">
+      <button onclick="viewFullFingerprint('${data.deviceId}')" class="action-btn view-btn">
+        🔍 View Full Data
+      </button>
+      <button onclick="trackDevice('${data.deviceId}')" class="action-btn track-btn">
+        📡 Track Device
+      </button>
+      <button onclick="exportFingerprint('${data.deviceId}')" class="action-btn export-btn">
+        📄 Export Data
+      </button>
+    </div>
+  `;
+  
+  return card;
+}
+
+function showFingerprintNotification(data) {
+  const notification = document.createElement('div');
+  notification.className = 'fingerprint-notification';
+  notification.innerHTML = `
+    <div class="notification-content">
+      <div class="notification-icon">🔍</div>
+      <div class="notification-text">
+        <strong>New Device Detected</strong><br>
+        ${data.network?.ip || 'Unknown IP'} from ${data.location?.country || 'Unknown'}
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Auto remove after 5 seconds
+  setTimeout(() => {
+    if (notification.parentNode) {
+      notification.remove();
+    }
+  }, 5000);
+}
+
+// Fingerprint action functions
+function viewFullFingerprint(deviceId) {
+  const data = fingerprintData.get(deviceId);
+  if (!data) return;
+  
+  const modal = document.createElement('div');
+  modal.className = 'fingerprint-modal';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>🔍 Complete Device Fingerprint</h3>
+        <button onclick="this.parentElement.parentElement.parentElement.remove()">×</button>
+      </div>
+      <div class="modal-body">
+        <pre class="fingerprint-json">${JSON.stringify(data, null, 2)}</pre>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.remove();
+    }
+  });
+}
+
+function trackDevice(deviceId) {
+  const data = fingerprintData.get(deviceId);
+  if (!data) return;
+  
+  alert(`🔍 Device Tracking Initiated\n\nDevice ID: ${deviceId}\nIP: ${data.network?.ip}\nLocation: ${data.location?.city}, ${data.location?.country}\n\nThis device will be monitored for future activity.`);
+  
+  // Send tracking request to server
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      type: 'track_device',
+      deviceId: deviceId,
+      adminType: currentAdminType
+    }));
+  }
+}
+
+function exportFingerprint(deviceId) {
+  const data = fingerprintData.get(deviceId);
+  if (!data) return;
+  
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `fingerprint_${deviceId}_${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// Additional fingerprinting utility functions
+function exportAllFingerprints() {
+  if (currentAdminType !== 'super') {
+    alert('Only super admin can export all fingerprints');
+    return;
+  }
+  
+  if (fingerprintData.size === 0) {
+    alert('No fingerprint data to export');
+    return;
+  }
+  
+  const allData = Array.from(fingerprintData.values());
+  const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `all_fingerprints_${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  showFingerprintNotification({ 
+    network: { ip: 'System' }, 
+    location: { country: 'Export Complete' }
+  });
+}
+
+function clearFingerprintData() {
+  if (currentAdminType !== 'super') {
+    alert('Only super admin can clear fingerprint data');
+    return;
+  }
+  
+  if (!confirm('Are you sure you want to clear all fingerprint data? This action cannot be undone.')) {
+    return;
+  }
+  
+  fingerprintData.clear();
+  updateFingerprintDisplay();
+  updateFingerprintStats();
+  
+  // Send clear request to server
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      type: 'clear_fingerprints',
+      adminType: currentAdminType
+    }));
+  }
+  
+  alert('Fingerprint data cleared successfully');
+}
+
+function refreshFingerprintAnalytics() {
+  if (currentAdminType !== 'super') {
+    return;
+  }
+  
+  // Send refresh request to server
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      type: 'refresh_fingerprint_analytics',
+      adminType: currentAdminType
+    }));
+  }
+  
+  // Update local analytics
+  updateFingerprintStats();
+}
+
+function updateFingerprintStats() {
+  if (currentAdminType !== 'super') return;
+  
+  const totalDevices = fingerprintData.size;
+  const uniqueIPs = new Set(Array.from(fingerprintData.values()).map(fp => fp.network?.ip)).size;
+  
+  let highRiskCount = 0;
+  fingerprintData.forEach(data => {
+    let risk = 0;
+    if (data.network?.tor) risk += 3;
+    if (data.browser?.incognito) risk += 2;
+    if (data.browser?.plugins?.length === 0) risk += 1;
+    if (risk >= 5) highRiskCount++;
+  });
+  
+  const totalDevicesEl = document.getElementById('totalDevicesTracked');
+  const uniqueIPsEl = document.getElementById('uniqueIPsDetected');
+  const highRiskEl = document.getElementById('highRiskDevices');
+  
+  if (totalDevicesEl) totalDevicesEl.textContent = totalDevices;
+  if (uniqueIPsEl) uniqueIPsEl.textContent = uniqueIPs;
+  if (highRiskEl) highRiskEl.textContent = highRiskCount;
+}
+
+// Initialize fingerprinting display when admin panel loads
+document.addEventListener('DOMContentLoaded', () => {
+  // Add fingerprinting initialization
+  setTimeout(() => {
+    if (currentAdminType === 'super') {
+      updateFingerprintStats();
+      refreshFingerprintAnalytics();
+    }
+  }, 1000);
+});

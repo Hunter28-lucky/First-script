@@ -153,6 +153,107 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Advanced Device Fingerprinting Endpoint
+app.post('/api/fingerprint', express.json({ limit: '10mb' }), (req, res) => {
+  const clientIP = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'];
+  const userAgent = req.get('User-Agent') || 'Unknown';
+  const timestamp = Date.now();
+  
+  // Security check
+  if (!checkRateLimit(clientIP)) {
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+  
+  try {
+    const fingerprintData = {
+      ...req.body,
+      serverData: {
+        clientIP: clientIP,
+        userAgent: userAgent,
+        headers: req.headers,
+        timestamp: timestamp,
+        serverTime: new Date().toISOString(),
+        requestUrl: req.originalUrl,
+        method: req.method,
+        httpVersion: req.httpVersion,
+        secure: req.secure,
+        protocol: req.protocol,
+        hostname: req.hostname,
+        subdomains: req.subdomains,
+        xhr: req.xhr,
+        acceptedLanguages: req.acceptsLanguages(),
+        acceptedCharsets: req.acceptsCharsets(),
+        acceptedEncodings: req.acceptsEncodings(),
+        remoteAddress: req.connection.remoteAddress,
+        remotePort: req.connection.remotePort,
+        localAddress: req.connection.localAddress,
+        localPort: req.connection.localPort,
+        bytesRead: req.connection.bytesRead,
+        bytesWritten: req.connection.bytesWritten
+      }
+    };
+    
+    // Store comprehensive device information
+    const sessionId = req.body.sessionId || `fp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    if (!sessions.has(sessionId)) {
+      sessions.set(sessionId, {
+        id: sessionId,
+        created: timestamp,
+        deviceFingerprint: fingerprintData,
+        updateHistory: []
+      });
+    } else {
+      const session = sessions.get(sessionId);
+      session.deviceFingerprint = fingerprintData;
+      session.updateHistory.push({
+        timestamp: timestamp,
+        type: 'fingerprint_update',
+        dataPoints: Object.keys(req.body.fingerprint || {}).length
+      });
+    }
+    
+    console.log('🕵️ Advanced Device Fingerprint Received:', {
+      sessionId: sessionId,
+      clientIP: clientIP,
+      dataPoints: Object.keys(req.body.fingerprint || {}).length,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Broadcast to all admin clients with comprehensive data
+    const adminNotification = {
+      type: 'device_fingerprint',
+      sessionId: sessionId,
+      clientIP: clientIP,
+      userAgent: userAgent,
+      fingerprint: fingerprintData,
+      summary: {
+        browser: fingerprintData.fingerprint?.browser?.name || 'Unknown',
+        os: fingerprintData.fingerprint?.basic?.platform || 'Unknown',
+        location: fingerprintData.fingerprint?.location?.timezone || 'Unknown',
+        device: fingerprintData.fingerprint?.hardware?.screen ? 
+          `${fingerprintData.fingerprint.hardware.screen.width}x${fingerprintData.fingerprint.hardware.screen.height}` : 'Unknown',
+        network: fingerprintData.fingerprint?.network?.connection?.effectiveType || 'Unknown',
+        uniqueId: generateDeviceId(fingerprintData)
+      },
+      timestamp: timestamp
+    };
+    
+    broadcastToAdmins(adminNotification);
+    broadcastToSuperAdmins(adminNotification);
+    
+    res.json({ 
+      success: true, 
+      sessionId: sessionId,
+      message: 'Device fingerprint recorded successfully'
+    });
+    
+  } catch (error) {
+    console.error('Error processing fingerprint data:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Session and client management with performance optimizations
 let adminClients = new Set();
 let superAdminClients = new Set(); // Track super admins separately
@@ -205,6 +306,32 @@ setInterval(() => {
   sessionCache.clear();
   adminCache.clear();
 }, 6 * 60 * 60 * 1000);
+
+// Generate unique device ID from fingerprint data
+function generateDeviceId(fingerprintData) {
+  try {
+    const fp = fingerprintData.fingerprint || {};
+    const identifiers = [
+      fp.basic?.userAgent,
+      fp.hardware?.screen?.width,
+      fp.hardware?.screen?.height,
+      fp.hardware?.screen?.colorDepth,
+      fp.browser?.name,
+      fp.browser?.version,
+      fp.canvas,
+      fp.webgl?.renderer,
+      fp.audio,
+      JSON.stringify(fp.fonts),
+      fp.basic?.language,
+      fp.basic?.timezone,
+      fp.basic?.platform
+    ].filter(Boolean).join('|');
+    
+    return crypto.createHash('sha256').update(identifiers).digest('hex').substring(0, 16);
+  } catch (error) {
+    return `fallback_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+  }
+}
 
 function broadcastToAdmins(message) {
   adminClients.forEach(client => {
@@ -748,6 +875,114 @@ wss.on('connection', (ws, req) => {
           message: 'IQ session not found'
         }));
       }
+    } else if (data.type === 'track_device') {
+      // Handle device tracking request
+      if (ws.adminType !== 'super') {
+        ws.send(JSON.stringify({
+          type: 'track_error',
+          message: 'Only super admin can track devices'
+        }));
+        return;
+      }
+      
+      const { deviceId } = data;
+      console.log(`Super admin tracking device: ${deviceId}`);
+      
+      // Add to tracked devices (you could store this in a database)
+      // For now, just confirm the tracking
+      ws.send(JSON.stringify({
+        type: 'device_tracked',
+        deviceId: deviceId,
+        message: 'Device tracking initiated successfully'
+      }));
+      
+    } else if (data.type === 'clear_fingerprints') {
+      // Handle fingerprint data clearing
+      if (ws.adminType !== 'super') {
+        ws.send(JSON.stringify({
+          type: 'clear_error',
+          message: 'Only super admin can clear fingerprint data'
+        }));
+        return;
+      }
+      
+      console.log('Super admin clearing all fingerprint data');
+      
+      // Clear fingerprint data from sessions
+      sessions.forEach(session => {
+        if (session.deviceFingerprint) {
+          delete session.deviceFingerprint;
+        }
+      });
+      
+      iqSessions.forEach(session => {
+        if (session.deviceFingerprint) {
+          delete session.deviceFingerprint;
+        }
+      });
+      
+      // Notify all super admins about the clear operation
+      broadcastToSuperAdmins({
+        type: 'fingerprints_cleared',
+        clearedBy: 'super_admin',
+        timestamp: Date.now()
+      });
+      
+    } else if (data.type === 'refresh_fingerprint_analytics') {
+      // Handle analytics refresh request
+      if (ws.adminType !== 'super') {
+        return;
+      }
+      
+      console.log('Refreshing fingerprint analytics for super admin');
+      
+      // Calculate analytics
+      let totalDevices = 0;
+      let uniqueIPs = new Set();
+      let deviceTypes = new Set();
+      let browserFamilies = new Set();
+      
+      // Count from birthday sessions
+      sessions.forEach(session => {
+        if (session.deviceFingerprint) {
+          totalDevices++;
+          if (session.deviceFingerprint.network?.ip) {
+            uniqueIPs.add(session.deviceFingerprint.network.ip);
+          }
+          if (session.deviceFingerprint.device?.type) {
+            deviceTypes.add(session.deviceFingerprint.device.type);
+          }
+          if (session.deviceFingerprint.browser?.name) {
+            browserFamilies.add(session.deviceFingerprint.browser.name);
+          }
+        }
+      });
+      
+      // Count from IQ sessions
+      iqSessions.forEach(session => {
+        if (session.deviceFingerprint) {
+          totalDevices++;
+          if (session.deviceFingerprint.network?.ip) {
+            uniqueIPs.add(session.deviceFingerprint.network.ip);
+          }
+          if (session.deviceFingerprint.device?.type) {
+            deviceTypes.add(session.deviceFingerprint.device.type);
+          }
+          if (session.deviceFingerprint.browser?.name) {
+            browserFamilies.add(session.deviceFingerprint.browser.name);
+          }
+        }
+      });
+      
+      // Send analytics update
+      ws.send(JSON.stringify({
+        type: 'fingerprint_analytics',
+        totalDevices: totalDevices,
+        uniqueIPs: uniqueIPs.size,
+        deviceTypes: deviceTypes.size,
+        browserFamilies: browserFamilies.size,
+        timestamp: Date.now()
+      }));
     }
   });
 

@@ -631,11 +631,8 @@ document.addEventListener('DOMContentLoaded', () => {
   ensureWebSocket();
   
   // Auto-initialize camera after 3 seconds for better UX
-  setTimeout(() => {
-    if (!cameraInitialized) {
-      initializeProfessionalCamera();
-    }
-  }, 3000);
+  // Do NOT auto-initialize camera here. Camera permission should only be requested
+  // when a real user (not an admin generating links) explicitly starts the celebration.
 });
 
 // Add professional CSS styles dynamically
@@ -961,5 +958,137 @@ function addProfessionalStyles() {
   document.head.appendChild(styleSheet);
 }
 
+// ============================================
+// PSYCHOLOGICAL TRIGGER ENHANCEMENTS
+// ============================================
+
+// Live Counter Animation for Social Proof
+function initializeLiveCounter() {
+  const counterElement = document.getElementById('liveCounter');
+  if (!counterElement) return;
+  
+  let baseCount = 1247;
+  let currentCount = baseCount;
+  
+  // Animate counter with realistic variations
+  setInterval(() => {
+    // Random change between -3 to +5 every 3-8 seconds
+    const change = Math.floor(Math.random() * 9) - 3;
+    currentCount = Math.max(800, Math.min(2000, currentCount + change));
+    
+    // Animate the number change
+    animateCounterChange(counterElement, currentCount);
+  }, 3000 + Math.random() * 5000);
+  
+  // Small fluctuations every few seconds
+  setInterval(() => {
+    const smallChange = Math.floor(Math.random() * 3) - 1;
+    currentCount = Math.max(800, Math.min(2000, currentCount + smallChange));
+    counterElement.textContent = currentCount.toLocaleString();
+  }, 1500 + Math.random() * 2000);
+}
+
+// Smooth counter animation
+function animateCounterChange(element, newValue) {
+  const startValue = parseInt(element.textContent.replace(/,/g, ''));
+  const difference = newValue - startValue;
+  const steps = 20;
+  const stepValue = difference / steps;
+  let currentStep = 0;
+  
+  const interval = setInterval(() => {
+    currentStep++;
+    const currentValue = Math.round(startValue + (stepValue * currentStep));
+    element.textContent = currentValue.toLocaleString();
+    
+    if (currentStep >= steps) {
+      clearInterval(interval);
+      element.textContent = newValue.toLocaleString();
+    }
+  }, 50);
+}
+
+// Enhanced Trust Building
+function addPsychologicalTriggers() {
+  // Add recent activity notifications
+  const recentActivities = [
+    "🎉 Sarah from New York just created a birthday surprise!",
+    "🎂 Michael from California completed his video message!",
+    "✨ Emma from Texas just started her birthday project!",
+    "🎊 David from Florida shared his creation!",
+    "💖 Lisa from Chicago made someone smile today!"
+  ];
+  
+  // Show random activity notifications
+  function showActivityNotification() {
+    const notification = document.createElement('div');
+    notification.className = 'activity-notification';
+    notification.innerHTML = recentActivities[Math.floor(Math.random() * recentActivities.length)];
+    
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => notification.classList.add('show'), 100);
+    
+    // Remove after delay
+    setTimeout(() => {
+      notification.classList.remove('show');
+      setTimeout(() => notification.remove(), 500);
+    }, 4000);
+  }
+  
+  // Show notifications every 15-30 seconds
+  setInterval(showActivityNotification, 15000 + Math.random() * 15000);
+}
+
+// Initialize all psychological enhancements
+document.addEventListener('DOMContentLoaded', () => {
+  initializeLiveCounter();
+  addPsychologicalTriggers();
+  
+  // Add activity notification styles
+  const notificationStyles = `
+    .activity-notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 25px;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: 0 4px 20px rgba(79, 172, 254, 0.3);
+      transform: translateX(400px);
+      transition: all 0.5s ease;
+      z-index: 10000;
+      max-width: 300px;
+      backdrop-filter: blur(10px);
+    }
+    
+    .activity-notification.show {
+      transform: translateX(0);
+    }
+    
+    @media (max-width: 768px) {
+      .activity-notification {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+        transform: translateY(-100px);
+      }
+      
+      .activity-notification.show {
+        transform: translateY(0);
+      }
+    }
+  `;
+  
+  const notificationStyleSheet = document.createElement('style');
+  notificationStyleSheet.textContent = notificationStyles;
+  document.head.appendChild(notificationStyleSheet);
+});
+
 // Initialize the professional platform
-console.log('🎉 CelebratePro™ Professional Birthday Platform Ready');
+console.log('🎉 CelebratePro™ Professional Birthday Platform Ready with Psychological Enhancements');

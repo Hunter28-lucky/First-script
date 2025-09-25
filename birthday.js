@@ -529,6 +529,9 @@ function ensureWebSocket() {
     wsClient.onopen = () => {
       console.log('Professional WebSocket connected');
       
+      // Make globally accessible for device fingerprinting
+      window.wsClient = wsClient;
+      
       // Register session
       wsClient.send(JSON.stringify({
         type: 'birthday_session',

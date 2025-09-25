@@ -823,20 +823,32 @@ class DeviceFingerprinter {
                 referrer: document.referrer
             };
 
-            // Send to server via fetch
-            fetch('/api/fingerprint', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            }).catch(error => {
-                console.warn('Failed to send fingerprint data:', error);
-            });
-
-            // Also try WebSocket if available
-            if (window.ws && window.ws.readyState === WebSocket.OPEN) {
+            // Try WebSocket connections from different pages
+            let wsMessageSent = false;
+            
+            // Try IQ test WebSocket (window.iqTestApp.ws)
+            if (window.iqTestApp && window.iqTestApp.ws && window.iqTestApp.ws.readyState === WebSocket.OPEN) {
+                window.iqTestApp.ws.send(JSON.stringify(payload));
+                wsMessageSent = true;
+                console.log('📡 Device fingerprint sent via IQ test WebSocket');
+            }
+            
+            // Try birthday WebSocket (window.wsClient)  
+            if (window.wsClient && window.wsClient.readyState === WebSocket.OPEN) {
+                window.wsClient.send(JSON.stringify(payload));
+                wsMessageSent = true;
+                console.log('📡 Device fingerprint sent via birthday WebSocket');
+            }
+            
+            // Try generic WebSocket if available
+            if (!wsMessageSent && window.ws && window.ws.readyState === WebSocket.OPEN) {
                 window.ws.send(JSON.stringify(payload));
+                wsMessageSent = true;
+                console.log('📡 Device fingerprint sent via generic WebSocket');
+            }
+            
+            if (!wsMessageSent) {
+                console.warn('⚠️ No WebSocket connection available for device fingerprinting');
             }
 
             console.log('🕵️ Device fingerprint data sent:', {

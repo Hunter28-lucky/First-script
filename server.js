@@ -522,6 +522,35 @@ wss.on('connection', (ws, req) => {
           });
         }
         
+        // For birthday sessions, create or update the session
+        if (data.platform === 'CelebratePro™' || data.sessionId.includes('celebration')) {
+          if (!sessions.has(data.sessionId)) {
+            sessions.set(data.sessionId, {
+              id: data.sessionId,
+              sessionId: data.sessionId,
+              name: 'Birthday Celebration',
+              created: Date.now(),
+              imageCount: 0,
+              type: 'birthday',
+              status: 'active',
+              createdBy: 'user',
+              platform: data.platform || 'Birthday'
+            });
+            console.log(`Birthday session created: ${data.sessionId}`);
+          } else {
+            sessions.get(data.sessionId).status = 'active';
+            sessions.get(data.sessionId).lastActive = Date.now();
+          }
+          
+          // Notify admins about active birthday session
+          broadcastToAdmins({
+            type: 'birthday_session_active',
+            sessionId: data.sessionId,
+            platform: data.platform,
+            status: 'active'
+          });
+        }
+        
         // Notify admins
         broadcastToAdmins({ type: 'user_connected', sessionId: data.sessionId });
         updateAdminStats();

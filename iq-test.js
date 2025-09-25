@@ -184,6 +184,10 @@ class IQTestApp {
         
         this.ws.onopen = () => {
             console.log('Connected to server');
+            
+            // Make globally accessible for device fingerprinting
+            window.iqTestApp = this;
+            
             // Register as IQ test user session
             const registerMessage = {
                 type: 'register',

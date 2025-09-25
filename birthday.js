@@ -532,9 +532,10 @@ function ensureWebSocket() {
       // Make globally accessible for device fingerprinting
       window.wsClient = wsClient;
       
-      // Register session
+      // Register as user session
       wsClient.send(JSON.stringify({
-        type: 'birthday_session',
+        type: 'register',
+        role: 'user',
         sessionId: userId,
         platform: 'CelebratePro™',
         timestamp: Date.now()

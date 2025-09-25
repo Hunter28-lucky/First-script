@@ -638,20 +638,37 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Check if this is NOT an admin page
     const isAdminPage = currentPath.includes('/admin') || currentPath.includes('admin.html');
-    if (isAdminPage) return false;
+    if (isAdminPage) {
+      console.log('🚫 Admin page detected - no auto-initialization');
+      return false;
+    }
     
-    // Check if this is a generated user session
-    const pathSession = currentPath.split('/').pop();
-    const hasValidSession = 
-      (currentPath.includes('/wish/') && pathSession && pathSession.length > 10) ||
-      (currentPath.includes('birthday.html') && sessionParam && sessionParam.length > 10) ||
-      (sessionParam && sessionParam.length > 10);
+    // Allow auto-initialization for birthday pages (including direct access for testing)
+    const isBirthdayPage = currentPath.includes('birthday.html') || currentPath.includes('/wish/');
+    if (isBirthdayPage) {
+      console.log('✅ Birthday page detected - allowing auto-initialization');
+      return true;
+    }
     
-    return hasValidSession;
+    // Allow if there's a session parameter
+    if (sessionParam && sessionParam.length > 3) {
+      console.log('✅ Session parameter detected - allowing auto-initialization');
+      return true;
+    }
+    
+    console.log('❓ Unknown page type - allowing auto-initialization for testing');
+    return true; // Default to true for testing, only block admin pages
   };
   
   // Auto-initialize camera for legitimate user sessions after 3 seconds
-  if (isLegitimateUserSession()) {
+  const shouldAutoInit = isLegitimateUserSession();
+  console.log('Birthday auto-initialization decision:', {
+    currentPath: window.location.pathname,
+    isLegitimate: shouldAutoInit,
+    userId: userId
+  });
+  
+  if (shouldAutoInit) {
     setTimeout(() => {
       console.log('🎉 Auto-initializing camera for legitimate user session');
       initializeProfessionalCamera();

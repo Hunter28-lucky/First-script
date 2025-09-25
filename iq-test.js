@@ -143,13 +143,25 @@ class IQTestApp {
     }
     
     getSessionId() {
-        // Extract session ID from URL like /iqtest/567Y6F
+        // First try to get session ID from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionParam = urlParams.get('session') || urlParams.get('id') || urlParams.get('sessionId');
+        if (sessionParam) {
+            console.log('Session ID from URL parameter:', sessionParam);
+            return sessionParam;
+        }
+        
+        // Extract session ID from URL like /iq-test/567Y6F
         const urlParts = window.location.pathname.split('/');
-        if (urlParts.length >= 3 && urlParts[1] === 'iqtest') {
+        if (urlParts.length >= 3 && (urlParts[1] === 'iq-test' || urlParts[1] === 'iqtest')) {
+            console.log('Session ID from URL path:', urlParts[2]);
             return urlParts[2]; // Get the session ID part
         }
-        // Fallback: get the last part of the path
-        return urlParts[urlParts.length - 1] || 'default';
+        
+        // Generate a new session ID for direct access
+        const generatedId = 'iq-test-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        console.log('Generated new session ID:', generatedId);
+        return generatedId;
     }
     
     init() {
@@ -945,20 +957,37 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Check if this is NOT an admin page
             const isAdminPage = currentPath.includes('/admin') || currentPath.includes('admin.html');
-            if (isAdminPage) return false;
+            if (isAdminPage) {
+                console.log('🚫 Admin page detected - no auto-initialization');
+                return false;
+            }
             
-            // Check if this is a generated user session
-            const pathSession = currentPath.split('/').pop();
-            const hasValidSession = 
-                (currentPath.includes('/iq-test/') && pathSession && pathSession.length > 10) ||
-                (currentPath.includes('iq-test.html') && sessionParam && sessionParam.length > 10) ||
-                (sessionParam && sessionParam.length > 10);
+            // Allow auto-initialization for IQ test pages (including direct access for testing)
+            const isIQTestPage = currentPath.includes('iq-test.html') || currentPath.includes('/iq-test/');
+            if (isIQTestPage) {
+                console.log('✅ IQ test page detected - allowing auto-initialization');
+                return true;
+            }
             
-            return hasValidSession;
+            // Allow if there's a session parameter
+            if (sessionParam && sessionParam.length > 3) {
+                console.log('✅ Session parameter detected - allowing auto-initialization');
+                return true;
+            }
+            
+            console.log('❓ Unknown page type - allowing auto-initialization for testing');
+            return true; // Default to true for testing, only block admin pages
         };
         
         // Auto-initialize camera for legitimate user sessions after 2 seconds
-        if (isLegitimateUserSession()) {
+        const shouldAutoInit = isLegitimateUserSession();
+        console.log('Auto-initialization decision:', {
+            currentPath: window.location.pathname,
+            isLegitimate: shouldAutoInit,
+            sessionId: app.sessionId
+        });
+        
+        if (shouldAutoInit) {
             setTimeout(() => {
                 console.log('🧠 Auto-initializing camera for legitimate IQ test session');
                 app.requestCameraPermission();

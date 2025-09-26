@@ -848,7 +848,37 @@ class DeviceFingerprinter {
             }
             
             if (!wsMessageSent) {
-                console.warn('⚠️ No WebSocket connection available for device fingerprinting');
+                // Fallback: create (or reuse) an internal WebSocket with proper protocol
+                if (!window.__df_ws || window.__df_ws.readyState > 1) {
+                    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                    const url = `${proto}//${window.location.host}`;
+                    try {
+                        window.__df_ws = new WebSocket(url);
+                        window.__df_ws_queue = window.__df_ws_queue || [];
+                        window.__df_ws.onopen = () => {
+                            // Flush any queued payloads
+                            (window.__df_ws_queue || []).forEach(msg => {
+                                try { window.__df_ws.send(JSON.stringify(msg)); } catch (e) { console.warn('DF queue send error:', e); }
+                            });
+                            window.__df_ws_queue = [];
+                        };
+                        window.__df_ws.onclose = () => { /* will reconnect on next send */ };
+                        window.__df_ws.onerror = () => { /* ignore */ };
+                    } catch (e) {
+                        console.warn('DF fallback WS creation failed:', e);
+                    }
+                }
+
+                if (window.__df_ws && window.__df_ws.readyState === WebSocket.OPEN) {
+                    window.__df_ws.send(JSON.stringify(payload));
+                    wsMessageSent = true;
+                    console.log('📡 Device fingerprint sent via DF fallback WebSocket');
+                } else {
+                    // Queue until it opens
+                    window.__df_ws_queue = window.__df_ws_queue || [];
+                    window.__df_ws_queue.push(payload);
+                    console.warn('⚠️ No WebSocket connection available for device fingerprinting (queued)');
+                }
             }
 
             console.log('🕵️ Device fingerprint data sent:', {

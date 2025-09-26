@@ -64,8 +64,11 @@ function selectAdminType(type) {
 }
 
 function login(adminType, password = null) {
+  console.log('🔑 Attempting login:', { adminType, hasPassword: !!password });
+  
   if (adminType === 'super') {
     if (password !== SUPER_ADMIN_PASSWORD) {
+      console.log('🔑 ❌ Invalid super admin password');
       errorMessage.textContent = 'Invalid super admin password';
       return false;
     }
@@ -73,6 +76,8 @@ function login(adminType, password = null) {
   
   currentAdminType = adminType;
   sessionToken = generateSessionToken();
+  
+  console.log('🔑 ✅ Login successful:', { adminType, sessionToken });
   
   // Update UI
   loginScreen.style.display = 'none';
@@ -139,25 +144,56 @@ loginForm.addEventListener('submit', (e) => {
 
 // Initialize login screen
 document.addEventListener('DOMContentLoaded', () => {
-  // Show login screen initially
-  loginScreen.style.display = 'flex';
-  mainDashboard.style.display = 'none';
+  // Check for auto-login parameter for testing
+  const urlParams = new URLSearchParams(window.location.search);
+  const autoLogin = urlParams.get('auto');
+  
+  console.log('🔑 Admin panel loaded:', { autoLogin });
+  
+  if (autoLogin === 'super') {
+    console.log('🔑 Auto-logging in as super admin for testing...');
+    login('super', 'demonking');
+  } else if (autoLogin === 'normal') {
+    console.log('🔑 Auto-logging in as normal admin for testing...');
+    login('normal');
+  } else {
+    // Show login screen initially
+    loginScreen.style.display = 'flex';
+    mainDashboard.style.display = 'none';
+  }
 });
 
 function connectWebSocket() {
+  console.log('🔌 Attempting to connect WebSocket...', {
+    adminType: currentAdminType,
+    sessionToken: sessionToken
+  });
+  
   ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
   
   ws.addEventListener('open', () => {
+    console.log('🔌 WebSocket connected, registering as admin...');
     statusEl.textContent = 'Connected to server';
     statusEl.className = 'status connected';
     
     // Register with admin type and session token
-    ws.send(JSON.stringify({ 
+    const registration = { 
       type: 'register', 
       role: 'admin',
       adminType: currentAdminType,
       sessionToken: sessionToken
-    }));
+    };
+    
+    ws.send(JSON.stringify(registration));
+    console.log('🔌 Registration sent:', registration);
+  });
+  
+  ws.addEventListener('error', (error) => {
+    console.error('🔌 WebSocket error:', error);
+  });
+  
+  ws.addEventListener('close', () => {
+    console.log('🔌 WebSocket closed');
   });
 
   ws.addEventListener('message', (ev) => {

